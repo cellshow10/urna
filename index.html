@@ -422,26 +422,35 @@
     }
     #app::before{display:none;}
     header.topo{margin:4px 4px 8px;}
+    /* Igual à urna real: painel de informações (foto/número/dígitos) na
+       parte preta da ESQUERDA, teclado físico na parte preta da DIREITA,
+       com uma divisória entre os dois. */
     #tela-votacao{
       display:grid;
-      grid-template-columns:1.1fr 1fr;
-      grid-template-rows:auto auto 1fr auto 1fr;
+      grid-template-columns:1fr 1.05fr;
       height:100%;
       grid-template-areas:
-        "trilha trilha"
-        "cargo painel"
-        "digitos painel"
-        "msg painel"
-        "teclado painel";
-      gap:6px 18px;
+        "trilha  trilha"
+        "cargo   teclado"
+        "digitos teclado"
+        "msg     teclado"
+        "painel  teclado";
+      grid-template-rows:auto auto auto 1fr auto;
+      gap:6px 0;
       align-items:start;
     }
     #trilha-cargos{grid-area:trilha;}
-    .cargo-label{grid-area:cargo;}
-    #caixas-digitos{grid-area:digitos;}
-    #msg-numero-errado{grid-area:msg;}
-    #teclado{grid-area:teclado;}
-    #painel-candidato{grid-area:painel; min-height:100%; align-items:flex-start;}
+    .cargo-label{grid-area:cargo; padding-right:16px;}
+    #caixas-digitos{grid-area:digitos; padding-right:16px;}
+    #msg-numero-errado{grid-area:msg; padding-right:16px;}
+    #painel-candidato{grid-area:painel; align-self:start; margin-right:16px;}
+    #teclado{
+      grid-area:teclado;
+      height:100%;
+      align-content:center;
+      padding-left:18px;
+      border-left:1px dashed #2c4232;
+    }
 
     .cargo-label .nome-cargo{font-size:19px;}
     .cargo-label .progresso{font-size:12px;}
@@ -458,15 +467,27 @@
     #tela-fim .palavra-fim{font-size:60px;}
     .tab-conteudo{max-height:none; flex:1; overflow-y:auto;}
   }
-  /* Se o navegador entrar em tela cheia de verdade (botão "tela cheia"),
-     preenche 100% mesmo que "pointer" seja detectado como fino. */
-  #app:fullscreen, #app.modo-admin:fullscreen,
+  /* Tela cheia de verdade (botão "tela cheia" / início da votação) sempre
+     preenche 100%, em qualquer orientação — mesmo se o aparelho não girar
+     para paisagem sozinho. */
   html:fullscreen #app, html:fullscreen #app.modo-admin,
   html:-webkit-full-screen #app, html:-webkit-full-screen #app.modo-admin{
     width:100%; max-width:none;
     height:100dvh; min-height:100dvh; max-height:100dvh;
     border-radius:0; border:none; box-shadow:none;
   }
+
+  /* MODO QUIOSQUE — durante o uso, bloqueia rolagem/zoom por gesto; só o
+     toque nos botões funciona. Formulários do admin continuam roláveis
+     normalmente (precisam disso para cadastrar candidatos). */
+  html, body{overscroll-behavior:none;}
+  #tela-inicial, #tela-votacao, #tela-fim, #teclado, .painel-candidato{
+    touch-action:none;
+    -webkit-touch-callout:none;
+    -webkit-user-select:none;
+    user-select:none;
+  }
+  .tab-conteudo{touch-action:pan-y;}
 </style>
 </head>
 <body>
@@ -878,6 +899,26 @@ function tentarModoHorizontal(){
     travarHorizontal();
   }
 }
+
+/* ================= MODO QUIOSQUE — bloqueia pinça/zoom/duplo-toque =================
+   Reforço via JS ao "touch-action:none" do CSS. Os campos de formulário do
+   painel admin (texto, senha, arquivo) continuam normais — só a área de
+   votação/telas do simulador ficam travadas a apenas toque simples. */
+function elementoPermiteGesto(el){
+  return !!(el && el.closest && el.closest('input, select, textarea, .tab-conteudo'));
+}
+document.addEventListener('gesturestart', e=> e.preventDefault());
+document.addEventListener('gesturechange', e=> e.preventDefault());
+document.addEventListener('touchmove', function(e){
+  if(e.touches.length > 1 && !elementoPermiteGesto(e.target)) e.preventDefault(); // impede pinça com dois dedos
+}, { passive:false });
+let ultimoToqueRapido = 0;
+document.addEventListener('touchend', function(e){
+  if(elementoPermiteGesto(e.target)) return;
+  const agora = Date.now();
+  if(agora - ultimoToqueRapido <= 300) e.preventDefault(); // impede zoom por duplo toque
+  ultimoToqueRapido = agora;
+}, { passive:false });
 
 /* ================= FLUXO DE VOTAÇÃO ================= */
 let digitosAtuais = '';
