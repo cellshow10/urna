@@ -45,39 +45,39 @@
   html,body{margin:0;padding:0;height:100%;}
   body{
     font-family:"Segoe UI", Arial, Helvetica, sans-serif;
-    background:radial-gradient(circle at 50% 0%, #3a3f47, #14161a 75%);
+    background:#0d1b2a;
     color:var(--texto);
-    min-height:100vh;
-    min-height:100dvh;
+    height:100vh;
+    height:100dvh;
     display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:14px;
-    padding-top:max(14px, env(safe-area-inset-top));
-    padding-bottom:max(14px, env(safe-area-inset-bottom));
-    padding-left:max(14px, env(safe-area-inset-left));
-    padding-right:max(14px, env(safe-area-inset-right));
+    align-items:stretch;
+    justify-content:stretch;
+    padding:0;
+    overflow:hidden;
+    overscroll-behavior:none;
   }
-  /* CARCAÇA (case plástico simulando o equipamento físico) */
+  /* CARCAÇA (case plástico simulando o equipamento físico) — sempre
+     ocupa 100% da tela disponível, em qualquer aparelho/navegador/
+     orientação, com ou sem tela cheia ativada. */
   #app{
     width:100%;
-    max-width:420px;
+    max-width:none;
     background:linear-gradient(180deg,var(--plastico),var(--plastico-sombra) 96%);
-    border-radius:22px;
-    padding:14px 14px 20px;
-    box-shadow:0 24px 55px rgba(0,0,0,.55), inset 0 2px 0 rgba(255,255,255,.6), inset 0 -3px 0 rgba(0,0,0,.15);
+    border-radius:0;
+    padding:10px 14px 14px;
+    padding-top:max(10px, env(safe-area-inset-top));
+    padding-bottom:max(10px, env(safe-area-inset-bottom));
+    padding-left:max(14px, env(safe-area-inset-left));
+    padding-right:max(14px, env(safe-area-inset-right));
+    box-shadow:none;
     display:flex;
     flex-direction:column;
-    min-height:660px;
-    max-height:100dvh;
+    height:100%;
+    min-height:100%;
+    max-height:100%;
     overflow-y:auto;
     position:relative;
-    border:1px solid #a19e93;
-  }
-  #app::before{
-    content:"";
-    position:absolute; top:8px; left:50%; transform:translateX(-50%);
-    width:46px; height:5px; border-radius:4px; background:#9c998e;
+    border:none;
   }
   header.topo{
     margin:14px 4px 10px;
@@ -332,7 +332,6 @@
   }
 
   /* ADMIN */
-  #app.modo-admin{max-width:640px;}
   .admin-header{
     display:flex; align-items:center; justify-content:space-between;
     background:var(--azul-escuro); padding:12px 14px; border-bottom:3px solid var(--amarelo);
@@ -392,10 +391,6 @@
 
   @media (max-width:400px){
     .caixa-digito{width:27px; height:36px; font-size:18px;}
-    #app{min-height:600px;}
-  }
-  @media (max-height:700px){
-    #app{min-height:auto;}
   }
   @media (max-width:380px){
     .item-cand{flex-wrap:wrap;}
@@ -418,25 +413,10 @@
   }
   @keyframes girar-tela{0%,100%{transform:rotate(0deg);}50%{transform:rotate(90deg);}}
 
-  /* MODO PAISAGEM — em qualquer celular/tablet deitado, a urna passa a
-     preencher 100% da tela (sem carcaça flutuando no meio de um fundo
-     vazio), reorganizada lado a lado e com textos maiores para melhor
-     leitura por idosos. Usa "pointer:coarse" para não afetar quem estiver
-     testando num notebook/desktop com a janela larga. */
+  /* MODO PAISAGEM — em celular/tablet deitado, reorganiza lado a lado
+     (igual à urna real) e aumenta textos para melhor leitura por idosos.
+     A tela já ocupa 100% por padrão em qualquer orientação/aparelho. */
   @media (orientation:landscape) and (pointer:coarse){
-    html, body{height:100%;}
-    body{padding:0; align-items:stretch; justify-content:stretch;}
-    #app, #app.modo-admin{
-      width:100%; max-width:none;
-      height:100dvh; min-height:100dvh; max-height:100dvh;
-      border-radius:0; border:none; box-shadow:none;
-      padding:10px 16px 16px;
-      padding-top:max(10px, env(safe-area-inset-top));
-      padding-bottom:max(10px, env(safe-area-inset-bottom));
-      padding-left:max(16px, env(safe-area-inset-left));
-      padding-right:max(16px, env(safe-area-inset-right));
-    }
-    #app::before{display:none;}
     header.topo{margin:4px 4px 8px;}
     /* Igual à urna real: painel de informações (foto/número/dígitos) na
        parte preta da ESQUERDA, teclado físico na parte preta da DIREITA,
@@ -482,15 +462,6 @@
 
     #tela-fim .palavra-fim{font-size:60px;}
     .tab-conteudo{max-height:none; flex:1; overflow-y:auto;}
-  }
-  /* Tela cheia de verdade (botão "tela cheia" / início da votação) sempre
-     preenche 100%, em qualquer orientação — mesmo se o aparelho não girar
-     para paisagem sozinho. */
-  html:fullscreen #app, html:fullscreen #app.modo-admin,
-  html:-webkit-full-screen #app, html:-webkit-full-screen #app.modo-admin{
-    width:100%; max-width:none;
-    height:100dvh; min-height:100dvh; max-height:100dvh;
-    border-radius:0; border:none; box-shadow:none;
   }
 
   /* MODO QUIOSQUE — durante o uso, bloqueia rolagem/zoom por gesto; só o
