@@ -402,16 +402,31 @@
   }
   @keyframes girar-tela{0%,100%{transform:rotate(0deg);}50%{transform:rotate(90deg);}}
 
-  /* MODO PAISAGEM — reorganiza a tela de votação lado a lado e aumenta
-     textos/alvos de toque, para melhor leitura por idosos em celulares
-     e tablets deitados. */
-  @media (orientation:landscape) and (max-height:560px){
-    body{padding:8px; padding-top:max(8px, env(safe-area-inset-top)); padding-bottom:max(8px, env(safe-area-inset-bottom));}
-    #app{max-width:900px; min-height:auto; padding:10px 16px 16px;}
-    header.topo{margin:8px 4px 8px;}
+  /* MODO PAISAGEM — em qualquer celular/tablet deitado, a urna passa a
+     preencher 100% da tela (sem carcaça flutuando no meio de um fundo
+     vazio), reorganizada lado a lado e com textos maiores para melhor
+     leitura por idosos. Usa "pointer:coarse" para não afetar quem estiver
+     testando num notebook/desktop com a janela larga. */
+  @media (orientation:landscape) and (pointer:coarse){
+    html, body{height:100%;}
+    body{padding:0; align-items:stretch; justify-content:stretch;}
+    #app, #app.modo-admin{
+      width:100%; max-width:none;
+      height:100dvh; min-height:100dvh; max-height:100dvh;
+      border-radius:0; border:none; box-shadow:none;
+      padding:10px 16px 16px;
+      padding-top:max(10px, env(safe-area-inset-top));
+      padding-bottom:max(10px, env(safe-area-inset-bottom));
+      padding-left:max(16px, env(safe-area-inset-left));
+      padding-right:max(16px, env(safe-area-inset-right));
+    }
+    #app::before{display:none;}
+    header.topo{margin:4px 4px 8px;}
     #tela-votacao{
       display:grid;
       grid-template-columns:1.1fr 1fr;
+      grid-template-rows:auto auto 1fr auto 1fr;
+      height:100%;
       grid-template-areas:
         "trilha trilha"
         "cargo painel"
@@ -441,6 +456,16 @@
     .msg-numero-errado{font-size:15px;}
 
     #tela-fim .palavra-fim{font-size:60px;}
+    .tab-conteudo{max-height:none; flex:1; overflow-y:auto;}
+  }
+  /* Se o navegador entrar em tela cheia de verdade (botão "tela cheia"),
+     preenche 100% mesmo que "pointer" seja detectado como fino. */
+  #app:fullscreen, #app.modo-admin:fullscreen,
+  html:fullscreen #app, html:fullscreen #app.modo-admin,
+  html:-webkit-full-screen #app, html:-webkit-full-screen #app.modo-admin{
+    width:100%; max-width:none;
+    height:100dvh; min-height:100dvh; max-height:100dvh;
+    border-radius:0; border:none; box-shadow:none;
   }
 </style>
 </head>
