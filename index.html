@@ -152,6 +152,7 @@
 
   /* TELA VOTACAO — visor + teclado físico */
   #tela-votacao{gap:8px; padding-bottom:12px;}
+  .rotulo-treinamento{display:none;}
 
   /* trilha de etapas (breadcrumb) no topo do visor */
   .trilha-cargos{
@@ -222,16 +223,19 @@
   .painel-candidato .info .vice{font-size:11px; color:#9fc2ac; margin-top:5px;}
   .painel-candidato .info .vice b{color:#dfe6ee;}
 
-  /* teclado físico — layout 4x4 igual ao modelo de referência:
-     colunas 1-3 = teclado numérico, coluna 4 = BRANCO / CORRIGE / CONFIRMA */
+  /* teclado físico — layout igual ao modelo real: grade 1-9 (3 colunas),
+     0 sozinho centralizado, e BRANCO / CORRIGE / CONFIRMA numa fileira. */
   .teclado-fisico{
     display:grid;
-    grid-template-columns:repeat(4,1fr);
-    grid-auto-rows:1fr;
+    grid-template-columns:repeat(3,1fr);
     gap:7px;
     padding:0 2px;
     margin-top:4px;
   }
+  .teclado-fisico > :nth-child(10){grid-column:2;}
+  .teclado-fisico > :nth-child(11){grid-row:5; grid-column:1;}
+  .teclado-fisico > :nth-child(12){grid-row:5; grid-column:2;}
+  .teclado-fisico > :nth-child(13){grid-row:5; grid-column:3;}
   .tecla-num{
     background:#333f4c;
     color:#fff;
@@ -418,34 +422,55 @@
      A tela já ocupa 100% por padrão em qualquer orientação/aparelho. */
   @media (orientation:landscape) and (pointer:coarse){
     header.topo{margin:4px 4px 8px;}
-    /* Igual à urna real: painel de informações (foto/número/dígitos) na
-       parte preta da ESQUERDA, teclado físico na parte preta da DIREITA,
-       com uma divisória entre os dois. */
+    /* Igual à urna real: visor CINZA CLARO com foto/número/dígitos na
+       ESQUERDA, painel PRETO com o teclado físico na DIREITA. */
     #tela-votacao{
       display:grid;
       grid-template-columns:1fr 1.05fr;
       height:100%;
       grid-template-areas:
+        "rotulo  rotulo"
         "trilha  trilha"
         "cargo   teclado"
         "digitos teclado"
         "msg     teclado"
         "painel  teclado";
-      grid-template-rows:auto auto auto 1fr auto;
-      gap:6px 0;
+      grid-template-rows:auto auto auto auto 1fr auto;
+      gap:4px 0;
       align-items:start;
+      background:linear-gradient(180deg,#d9d8d4,#c9c8c2);
+      box-shadow:inset 0 0 0 3px #a9a89e, inset 0 0 14px rgba(0,0,0,.15);
+      color:#1c1c1c;
     }
-    #trilha-cargos{grid-area:trilha;}
-    .cargo-label{grid-area:cargo; padding-right:16px;}
-    #caixas-digitos{grid-area:digitos; padding-right:16px;}
-    #msg-numero-errado{grid-area:msg; padding-right:16px;}
-    #painel-candidato{grid-area:painel; align-self:start; margin-right:16px;}
+    .rotulo-treinamento{
+      grid-area:rotulo; display:block; text-align:center;
+      font-size:10px; letter-spacing:1px; color:#8c8b85; padding-top:2px;
+    }
+    #trilha-cargos{grid-area:trilha; border-bottom-color:#b5b4ac; padding-left:14px;}
+    .crumb{background:rgba(0,0,0,.05); color:#8c8b85;}
+    .crumb.feito{color:#4c6a58;}
+    .cargo-label{grid-area:cargo; padding-right:16px; padding-left:14px; text-align:left;}
+    .cargo-label .nome-cargo{color:#1c1c1c;}
+    .cargo-label .progresso{color:#6b6a63;}
+    #caixas-digitos{grid-area:digitos; padding-right:16px; padding-left:14px; justify-content:flex-start;}
+    .caixa-digito{background:#fff; border-color:#9a998f; color:#1c1c1c;}
+    .caixa-digito.vazia{border-color:#b7b6ae; color:transparent;}
+    #msg-numero-errado{grid-area:msg; padding-right:16px; padding-left:14px; text-align:left; color:#b3261e;}
+    #painel-candidato{grid-area:painel; align-self:start; margin:0 16px 0 14px; background:rgba(255,255,255,.55); border-color:#b7b6ae;}
+    .painel-candidato .foto-wrap{background:#e7e6e1; border-color:#b7b6ae;}
+    .painel-candidato .foto-wrap.sem-foto{color:#8c8b85;}
+    .painel-candidato .info .num{color:#1c1c1c;}
+    .painel-candidato .info .nome{color:#1c1c1c;}
+    .painel-candidato .info .vice{color:#4c6a58;}
+    .painel-candidato .info .vice b{color:#1c1c1c;}
     #teclado{
       grid-area:teclado;
       height:100%;
       align-content:center;
-      padding-left:18px;
-      border-left:1px dashed #2c4232;
+      padding:12px 14px;
+      margin:0;
+      background:#22262a;
+      border-radius:0;
     }
 
     .cargo-label .nome-cargo{font-size:19px;}
@@ -506,6 +531,7 @@
 
   <!-- TELA VOTACAO -->
   <div id="tela-votacao" class="tela hidden" style="position:relative;">
+    <div class="rotulo-treinamento">Treinamento</div>
     <div class="trilha-cargos" id="trilha-cargos"></div>
 
     <div class="cargo-label">
@@ -983,8 +1009,8 @@ function criarPontosBraille(){
 }
 
 function renderTeclado(){
-  // layout físico 4x4, igual ao modelo de referência:
-  // linha1: 1 2 3 BRANCO | linha2: 4 5 6 CORRIGE | linha3: 7 8 9 CONFIRMA | linha4: 0 _ _ _
+  // layout físico igual ao modelo real: grade 1-9, 0 sozinho centralizado
+  // embaixo, e BRANCO / CORRIGE / CONFIRMA numa fileira por último.
   const wrap = document.getElementById('teclado');
   wrap.innerHTML = '';
 
@@ -1007,33 +1033,14 @@ function renderTeclado(){
     if(onClick) b.onclick = onClick;
     return b;
   }
-  function criarCelulaVazia(){
-    const d = document.createElement('div');
-    d.className = 'tecla-vazia';
-    return d;
-  }
 
-  wrap.appendChild(criarTeclaNum('1'));
-  wrap.appendChild(criarTeclaNum('2'));
-  wrap.appendChild(criarTeclaNum('3'));
+  for(let n=1; n<=9; n++) wrap.appendChild(criarTeclaNum(String(n)));
+  wrap.appendChild(criarTeclaNum('0'));
   wrap.appendChild(criarTeclaFuncao('tecla-branco', 'BRANCO', votoBranco));
-
-  wrap.appendChild(criarTeclaNum('4'));
-  wrap.appendChild(criarTeclaNum('5'));
-  wrap.appendChild(criarTeclaNum('6'));
   wrap.appendChild(criarTeclaFuncao('tecla-corrige', 'CORRIGE', corrigeDigitacao));
-
-  wrap.appendChild(criarTeclaNum('7'));
-  wrap.appendChild(criarTeclaNum('8'));
-  wrap.appendChild(criarTeclaNum('9'));
   const btnConfirma = criarTeclaFuncao('tecla-confirma', 'CONFIRMA', tentarConfirmar, 'btn-confirma');
   btnConfirma.disabled = true;
   wrap.appendChild(btnConfirma);
-
-  wrap.appendChild(criarTeclaNum('0'));
-  wrap.appendChild(criarCelulaVazia());
-  wrap.appendChild(criarCelulaVazia());
-  wrap.appendChild(criarCelulaVazia());
 }
 
 /* ================= SONS DE VOTAÇÃO (sintetizados via Web Audio, sem arquivos externos) ================= */
