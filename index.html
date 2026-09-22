@@ -2,8 +2,24 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Simulador de Urna Eletrônica — Projeto Educacional</title>
+
+<!-- Permite instalar como app (ícone na tela inicial) e abrir SEM NENHUM
+     menu/barra do navegador — é o único jeito de esconder 100% da
+     interface do navegador em iPhone (o Safari do iOS não permite tela
+     cheia real dentro do próprio navegador, só via "Adicionar à Tela de
+     Início"). No Android/Chrome isso também melhora e soma com o botão
+     "tela cheia" do simulador. -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d1b2a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Urna Treino">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon-192.png">
+
 <style>
   :root{
     --azul-escuro:#0d1b2a;
@@ -512,6 +528,7 @@
     <p>Este é um simulador educacional de urna eletrônica.<br>Nenhum voto aqui tem validade oficial.</p>
     <button class="btn btn-primario btn-lg btn-full" onclick="iniciarVotacao()">INICIAR VOTAÇÃO</button>
     <button class="btn-link" onclick="tentarModoHorizontal()">🔄 Girar para horizontal / tela cheia</button>
+    <p id="dica-ios-tela-cheia" class="hidden" style="font-size:10.5px;color:#8a94a0;max-width:280px;">📲 iPhone/iPad: pra esconder TODOS os menus do Safari, toque em Compartilhar → "Adicionar à Tela de Início" e abra o simulador pelo ícone.</p>
     <button class="btn-link" onclick="abrirNovaVotacao()">Reiniciar sessão atual</button>
     <button class="btn-link" onclick="acessoViaAtalhoSecreto=false; abrirLoginAdmin();">Área administrativa</button>
   </div>
@@ -1880,6 +1897,19 @@ window.addEventListener('DOMContentLoaded', ()=>{
     persistirTudo();
   }
   mostrarTela('tela-inicial');
+
+  // No iPhone/iPad, o navegador não tem API de tela cheia real — o único
+  // jeito de esconder 100% da interface do Safari é abrir pelo ícone
+  // instalado ("Adicionar à Tela de Início"). Mostra a dica só quando faz
+  // sentido: é iOS e ainda não está rodando a partir do ícone instalado.
+  try{
+    const ehIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const jaInstalado = window.navigator.standalone === true ||
+      (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+    if(ehIOS && !jaInstalado){
+      document.getElementById('dica-ios-tela-cheia').classList.remove('hidden');
+    }
+  }catch(e){}
 });
 </script>
 </body>
