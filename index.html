@@ -1,0 +1,1680 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>Simulador de Urna Eletrônica — Projeto Educacional</title>
+<style>
+  :root{
+    --azul-escuro:#0d1b2a;
+    --azul:#1b3a57;
+    --azul-claro:#2d6a9f;
+    --cinza-urna:#2b2f36;
+    --cinza-claro:#e9edf2;
+    --verde:#1e8449;
+    --verde-escuro:#166534;
+    --laranja:#e08e0b;
+    --vermelho:#c0392b;
+    --texto:#eef2f6;
+    --amarelo:#f4c542;
+    /* carcaça plástica (aparência física do equipamento) */
+    --plastico:#e7e5df;
+    --plastico-sombra:#c7c4bb;
+    --plastico-escuro:#b7b4aa;
+    --tela-fundo:#17241d;
+    --tela-fundo2:#101a14;
+    --tela-texto:#e9f3ea;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:"Segoe UI", Arial, Helvetica, sans-serif;
+    background:radial-gradient(circle at 50% 0%, #3a3f47, #14161a 75%);
+    color:var(--texto);
+    min-height:100vh;
+    min-height:100dvh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:14px;
+    padding-top:max(14px, env(safe-area-inset-top));
+    padding-bottom:max(14px, env(safe-area-inset-bottom));
+    padding-left:max(14px, env(safe-area-inset-left));
+    padding-right:max(14px, env(safe-area-inset-right));
+  }
+  /* CARCAÇA (case plástico simulando o equipamento físico) */
+  #app{
+    width:100%;
+    max-width:420px;
+    background:linear-gradient(180deg,var(--plastico),var(--plastico-sombra) 96%);
+    border-radius:22px;
+    padding:14px 14px 20px;
+    box-shadow:0 24px 55px rgba(0,0,0,.55), inset 0 2px 0 rgba(255,255,255,.6), inset 0 -3px 0 rgba(0,0,0,.15);
+    display:flex;
+    flex-direction:column;
+    min-height:660px;
+    max-height:100dvh;
+    overflow-y:auto;
+    position:relative;
+    border:1px solid #a19e93;
+  }
+  #app::before{
+    content:"";
+    position:absolute; top:8px; left:50%; transform:translateX(-50%);
+    width:46px; height:5px; border-radius:4px; background:#9c998e;
+  }
+  header.topo{
+    margin:14px 4px 10px;
+    text-align:center;
+    padding-bottom:8px;
+    border-bottom:1px solid #a8a59a;
+  }
+  header.topo .titulo{
+    font-size:13.5px;
+    font-weight:800;
+    letter-spacing:.8px;
+    color:#2a2d33;
+  }
+  header.topo .subtitulo{
+    margin-top:4px;
+    display:inline-block;
+    background:#2a2d33;
+    color:var(--amarelo);
+    font-size:9.5px;
+    font-weight:800;
+    letter-spacing:1.5px;
+    padding:2px 10px;
+    border-radius:3px;
+  }
+  header.topo .aviso{
+    margin-top:5px;
+    font-size:8.5px;
+    color:#6b6e74;
+    line-height:1.3;
+  }
+  /* TELA (visor LCD embutido na carcaça) */
+  .tela{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    padding:14px 12px;
+    animation:fadein .18s ease;
+    background:linear-gradient(180deg,var(--tela-fundo),var(--tela-fundo2));
+    border-radius:10px;
+    margin:0 4px 12px;
+    box-shadow:inset 0 0 0 3px #05100a, inset 0 0 18px rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.4);
+    color:var(--tela-texto);
+    position:relative;
+  }
+  @keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+  .hidden{display:none !important;}
+
+  /* TELA INICIAL */
+  #tela-inicial{align-items:center; justify-content:center; text-align:center; gap:14px;}
+  #tela-inicial .icone-urna{font-size:64px;}
+  #tela-inicial h2{margin:0; font-size:18px;}
+  #tela-inicial p{margin:0; color:#b7c3d0; font-size:13px; line-height:1.5;}
+  .btn{
+    border:none;
+    border-radius:10px;
+    padding:14px 18px;
+    font-size:15px;
+    font-weight:700;
+    cursor:pointer;
+    transition:transform .05s ease, filter .15s ease;
+    color:#fff;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn-primario{background:var(--verde); box-shadow:0 4px 0 var(--verde-escuro);}
+  .btn-primario:active{box-shadow:0 1px 0 var(--verde-escuro); transform:translateY(3px) scale(.99);}
+  .btn-secundario{background:#3a4048; color:#dfe6ee;}
+  .btn-perigo{background:var(--vermelho);}
+  .btn-laranja{background:var(--laranja); color:#241a00;}
+  .btn-link{background:none; border:none; color:#7fa9d4; font-size:12px; text-decoration:underline; cursor:pointer; padding:6px;}
+  .btn-full{width:100%;}
+  .btn-lg{padding:18px; font-size:17px;}
+
+  /* TELA VOTACAO — visor + teclado físico */
+  #tela-votacao{gap:8px; padding-bottom:12px;}
+
+  /* trilha de etapas (breadcrumb) no topo do visor */
+  .trilha-cargos{
+    display:flex; align-items:center; gap:3px;
+    overflow-x:auto; white-space:nowrap;
+    padding-bottom:7px; margin-bottom:2px;
+    border-bottom:1px dashed #2c4232;
+    -webkit-overflow-scrolling:touch;
+  }
+  .trilha-cargos::-webkit-scrollbar{height:3px;}
+  .trilha-cargos::-webkit-scrollbar-thumb{background:#2c4232;}
+  .crumb{
+    font-size:9px; font-weight:700; letter-spacing:.2px;
+    padding:4px 8px; border-radius:20px; flex-shrink:0;
+    background:rgba(255,255,255,.05); color:#4a6a56;
+  }
+  .crumb.feito{color:#8fb89e;}
+  .crumb.atual{background:var(--amarelo); color:#1b1b1b;}
+  .crumb-seta{color:#2c4232; font-size:9px; flex-shrink:0;}
+
+  .cargo-label{
+    text-align:center;
+    padding-bottom:4px;
+  }
+  .cargo-label .nome-cargo{font-size:14.5px; font-weight:800; color:var(--tela-texto); letter-spacing:.5px;}
+  .cargo-label .progresso{font-size:10px; color:#7fa88a; margin-top:2px;}
+
+  .caixas-digitos{
+    display:flex; gap:6px; justify-content:center; flex-wrap:wrap;
+    padding:4px 0;
+  }
+  .caixa-digito{
+    width:32px; height:42px;
+    border:2px solid #2c4232; border-radius:6px;
+    background:rgba(0,0,0,.28);
+    display:flex; align-items:center; justify-content:center;
+    font-size:21px; font-weight:800; font-family:"Consolas", monospace;
+    color:#fff;
+  }
+  .caixa-digito.vazia{border-color:#213328; color:transparent;}
+  .caixa-digito.preenchida{border-color:#4a6a56;}
+
+  .msg-numero-errado{
+    text-align:center; color:#ff9d8a; font-weight:800; font-size:13px;
+    letter-spacing:.5px; min-height:16px;
+  }
+
+  .painel-candidato{
+    background:rgba(0,0,0,.22);
+    border:1px solid #2c4232;
+    border-radius:8px;
+    padding:9px;
+    min-height:112px;
+    display:flex;
+    gap:10px;
+    align-items:center;
+  }
+  .painel-candidato.oculto{visibility:hidden;}
+  .painel-candidato .foto-wrap{
+    width:74px;height:92px;border-radius:4px;overflow:hidden;background:#0d1712;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid #2c4232;
+  }
+  .painel-candidato .foto-wrap img{width:100%;height:100%;object-fit:cover;}
+  .painel-candidato .foto-wrap.sem-foto{font-size:9px;color:#5c7d68;text-align:center;padding:4px;}
+  .painel-candidato .info{flex:1;}
+  .painel-candidato .info .num{font-size:21px; font-weight:800; color:#fff; font-family:"Consolas",monospace;}
+  .painel-candidato .info .nome{font-size:14.5px; font-weight:700; margin-top:2px; color:var(--tela-texto);}
+  .painel-candidato .info .vice{font-size:11px; color:#9fc2ac; margin-top:5px;}
+  .painel-candidato .info .vice b{color:#dfe6ee;}
+
+  /* teclado físico — layout 4x4 igual ao modelo de referência:
+     colunas 1-3 = teclado numérico, coluna 4 = BRANCO / CORRIGE / CONFIRMA */
+  .teclado-fisico{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    grid-auto-rows:1fr;
+    gap:7px;
+    padding:0 2px;
+    margin-top:4px;
+  }
+  .tecla-num{
+    background:#333f4c;
+    color:#fff;
+    border:none;
+    border-radius:9px;
+    font-size:21px;
+    font-weight:800;
+    padding:14px 0;
+    cursor:pointer;
+    position:relative;
+    box-shadow:0 3px 0 rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.08);
+  }
+  .tecla-num:active{transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.35);}
+  .tecla-num .pontos-braille{position:absolute; right:6px; bottom:6px;}
+
+  .tecla-funcao{
+    border:none;
+    border-radius:9px;
+    cursor:pointer;
+    font-weight:800;
+    font-size:10.5px;
+    letter-spacing:.4px;
+    padding:6px 2px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:5px;
+    box-shadow:0 3px 0 rgba(0,0,0,.3);
+  }
+  .tecla-funcao:active{transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.3);}
+  .tecla-branco{background:#efece3; color:#1c1c1c; border:1px solid #cfcabc;}
+  .tecla-corrige{background:#e8710d; color:#241400;}
+  .tecla-confirma{background:#57964f; color:#0c1f0b;}
+  .tecla-confirma:disabled{background:#7c8a80; color:#3a3f37; cursor:not-allowed; box-shadow:0 3px 0 rgba(0,0,0,.2);}
+
+  .tecla-vazia{visibility:hidden;}
+
+  .pontos-braille{
+    display:grid;
+    grid-template-columns:repeat(2,4px);
+    grid-template-rows:repeat(3,4px);
+    gap:2.5px;
+  }
+  .pontos-braille span{width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.5;}
+
+  /* OVERLAY */
+  .overlay{
+    position:absolute; inset:0;
+    background:rgba(5,8,12,.92);
+    display:flex; align-items:center; justify-content:center;
+    padding:22px; z-index:50;
+  }
+  .overlay-caixa{
+    background:var(--cinza-urna);
+    border:2px solid var(--amarelo);
+    border-radius:14px;
+    padding:22px 18px;
+    text-align:center;
+    max-width:340px;
+    width:100%;
+  }
+  .overlay-caixa h3{margin:0 0 8px; font-size:19px; letter-spacing:.5px;}
+  .overlay-caixa p{margin:0 0 16px; font-size:13px; color:#c3cdd7; line-height:1.5;}
+  .overlay-caixa .linha-btns{display:flex; gap:10px;}
+  .overlay-caixa .linha-btns .btn{flex:1;}
+
+  /* TELA FIM — réplica do visor real (fundo branco, monocromático) */
+  #tela-fim{
+    align-items:stretch; justify-content:flex-start; text-align:center;
+    padding:0; background:#fff; color:#000; border-radius:10px; overflow:hidden;
+    position:relative;
+  }
+  .fim-topo{
+    display:flex; align-items:center; justify-content:space-between;
+    background:#000; color:#fff; padding:6px 9px; font-size:9.5px; font-weight:700;
+    letter-spacing:.3px;
+  }
+  .fim-topo .fim-treino{color:#9a9a9a; font-size:9.5px; letter-spacing:.5px;}
+  .fim-topo .bateria{display:flex; align-items:center; gap:2px;}
+  .fim-topo .bateria .corpo{
+    width:20px; height:10px; border:1.4px solid #fff; border-radius:2px; position:relative; display:flex; padding:1px; gap:1px;
+  }
+  .fim-topo .bateria .corpo span{flex:1; background:#3fcf50; border-radius:1px;}
+  .fim-topo .bateria .ponta{width:2px; height:5px; background:#fff; border-radius:0 2px 2px 0;}
+  .fim-meio{
+    flex:1; display:flex; align-items:center; justify-content:center;
+    min-height:200px; position:relative;
+  }
+  .fim-meio .palavra-fim{font-size:76px; font-weight:800; letter-spacing:4px; color:#000; font-family:Arial, Helvetica, sans-serif;}
+  .fim-votou{
+    position:absolute; right:12px; bottom:34px;
+    font-size:22px; font-weight:700; color:#c9c9c9; letter-spacing:1px;
+  }
+  .fim-rodape{
+    background:#0a1622; color:#dfe6ee; font-size:9px; padding:5px 9px;
+    display:flex; justify-content:center; gap:14px; flex-wrap:wrap;
+  }
+
+  /* ADMIN */
+  #app.modo-admin{max-width:640px;}
+  .admin-header{
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--azul-escuro); padding:12px 14px; border-bottom:3px solid var(--amarelo);
+  }
+  .admin-header h2{font-size:15px; margin:0;}
+  .tabs{display:flex; gap:4px; padding:8px 10px 0; flex-wrap:wrap; background:#1b1f26;}
+  .tab-btn{
+    background:#2b2f36; color:#b7c3d0; border:none; padding:8px 10px; border-radius:8px 8px 0 0;
+    font-size:11.5px; font-weight:700; cursor:pointer;
+  }
+  .tab-btn.ativo{background:var(--cinza-urna); color:var(--amarelo);}
+  .tab-conteudo{padding:14px; overflow-y:auto; max-height:70vh;}
+  .card{
+    background:#1b1f26; border:1px solid #2d3239; border-radius:10px; padding:12px; margin-bottom:12px;
+  }
+  .card h4{margin:0 0 8px; font-size:13px; color:var(--amarelo);}
+  label.campo{display:block; font-size:11px; color:#a9b7c4; margin:8px 0 3px;}
+  input[type=text], input[type=number], input[type=password], select{
+    width:100%; padding:11px 9px; border-radius:6px; border:1px solid #3a4048; background:#0f1319; color:#fff; font-size:16px;
+  }
+  input[type=file]{font-size:11px; color:#c3cdd7;}
+  .row{display:flex; gap:8px; flex-wrap:wrap;}
+  .row > *{flex:1; min-width:110px;}
+  .lista-candidatos{display:flex; flex-direction:column; gap:8px; margin-top:10px;}
+  .item-cand{
+    display:flex; gap:10px; align-items:center; background:#0f1319; border:1px solid #2d3239; border-radius:8px; padding:8px;
+  }
+  .item-cand .mini-foto{width:40px;height:50px;border-radius:4px;object-fit:cover;background:#232a33; flex-shrink:0;}
+  .item-cand .dados{flex:1; font-size:12px;}
+  .item-cand .dados .n{color:var(--amarelo); font-weight:800;}
+  .item-cand .dados .inativo-tag{color:#e08e0b; font-size:10px; font-weight:700;}
+  .item-cand .btns{display:flex; gap:5px;}
+  .item-cand .btns button{
+    border:none; border-radius:6px; padding:6px 8px; font-size:10.5px; cursor:pointer; color:#fff;
+  }
+  .tabela-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  table.resultados{width:100%; min-width:420px; border-collapse:collapse; font-size:12px; margin-top:6px;}
+  table.resultados th, table.resultados td{border-bottom:1px solid #2d3239; padding:6px 4px; text-align:left;}
+  table.resultados th{color:#8ea3b8; font-size:10.5px; text-transform:uppercase;}
+  .barra-bg{background:#0f1319; border-radius:5px; height:10px; overflow:hidden; margin-top:3px;}
+  .barra-fill{height:100%; background:var(--azul-claro);}
+  .stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;}
+  .stat-box{background:#0f1319; border-radius:8px; padding:10px; text-align:center;}
+  .stat-box .v{font-size:20px; font-weight:800; color:var(--amarelo);}
+  .stat-box .l{font-size:10px; color:#8ea3b8; margin-top:2px;}
+  .ordem-item{display:flex; align-items:center; gap:8px; background:#0f1319; border:1px solid #2d3239; border-radius:8px; padding:8px 10px; margin-bottom:6px;}
+  .ordem-item .nome-c{flex:1; font-size:12.5px; font-weight:700;}
+  .ordem-item .setas button{background:#3a4048; border:none; color:#fff; border-radius:5px; padding:5px 8px; cursor:pointer; font-size:11px;}
+  .msg-toast{
+    position:fixed; bottom:18px; left:50%; transform:translateX(-50%);
+    background:var(--verde-escuro); color:#fff; padding:10px 18px; border-radius:8px; font-size:12.5px; z-index:200;
+    box-shadow:0 6px 20px rgba(0,0,0,.4);
+  }
+  .rodape-admin{padding:10px 14px; text-align:center; border-top:1px solid #2d3239;}
+  ::-webkit-scrollbar{width:7px;}
+  ::-webkit-scrollbar-thumb{background:#3a4048; border-radius:4px;}
+
+  @media (max-width:400px){
+    .caixa-digito{width:27px; height:36px; font-size:18px;}
+    #app{min-height:600px;}
+  }
+  @media (max-height:700px){
+    #app{min-height:auto;}
+  }
+  @media (max-width:380px){
+    .item-cand{flex-wrap:wrap;}
+    .item-cand .btns{width:100%; justify-content:flex-end; margin-top:4px;}
+    .stat-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header class="topo" id="header-topo" onclick="cliqueSecretoHeader()">
+    <div class="titulo">SIMULADOR DE URNA ELETRÔNICA</div>
+    <div class="subtitulo">PROJETO EDUCACIONAL</div>
+    <div class="aviso">Simulação sem qualquer vínculo com a Justiça Eleitoral ou o TSE.</div>
+  </header>
+
+  <!-- TELA INICIAL -->
+  <div id="tela-inicial" class="tela">
+    <div class="icone-urna">🗳️</div>
+    <h2>Bem-vindo(a)</h2>
+    <p>Este é um simulador educacional de urna eletrônica.<br>Nenhum voto aqui tem validade oficial.</p>
+    <button class="btn btn-primario btn-lg btn-full" onclick="iniciarVotacao()">INICIAR VOTAÇÃO</button>
+    <button class="btn-link" onclick="abrirNovaVotacao()">Reiniciar sessão atual</button>
+    <button class="btn-link" onclick="acessoViaAtalhoSecreto=false; abrirLoginAdmin();">Área administrativa</button>
+  </div>
+
+  <!-- TELA VOTACAO -->
+  <div id="tela-votacao" class="tela hidden" style="position:relative;">
+    <div class="trilha-cargos" id="trilha-cargos"></div>
+
+    <div class="cargo-label">
+      <div class="nome-cargo" id="lbl-cargo">—</div>
+      <div class="progresso" id="lbl-progresso">—</div>
+    </div>
+
+    <div class="caixas-digitos" id="caixas-digitos"></div>
+    <div class="msg-numero-errado" id="msg-numero-errado"></div>
+
+    <div class="painel-candidato oculto" id="painel-candidato">
+      <div class="foto-wrap" id="foto-candidato-wrap"></div>
+      <div class="info" id="info-candidato"></div>
+    </div>
+
+    <div class="teclado-fisico" id="teclado"></div>
+
+    <div id="overlay-votacao"></div>
+  </div>
+
+  <!-- TELA FIM -->
+  <div id="tela-fim" class="tela hidden">
+    <div class="fim-topo">
+      <span id="fim-relogio">—</span>
+      <span class="fim-treino">TREINAMENTO</span>
+      <span class="bateria"><span class="corpo"><span></span><span></span><span></span></span><span class="ponta"></span></span>
+    </div>
+    <div class="fim-meio">
+      <div class="palavra-fim">FIM</div>
+      <div class="fim-votou">VOTOU</div>
+    </div>
+    <div class="fim-rodape">
+      <span>Simulador Educacional</span>
+      <span>Zona: 0001</span>
+      <span>Seção: 0001</span>
+    </div>
+  </div>
+
+  <!-- LOGIN ADMIN -->
+  <div id="tela-admin-login" class="tela hidden" style="align-items:center; justify-content:center; text-align:center; gap:12px;">
+    <div style="font-size:40px;">🔒</div>
+    <h2 style="margin:0; font-size:16px;">Área Administrativa</h2>
+    <input type="password" id="input-senha-admin" placeholder="Senha" style="max-width:220px;">
+    <div id="erro-senha" style="color:#ff8a7a; font-size:11.5px; display:none;">Senha incorreta.</div>
+    <div class="row" style="max-width:260px;">
+      <button class="btn btn-secundario" onclick="voltarInicio()">Voltar</button>
+      <button class="btn btn-primario" onclick="tentarLoginAdmin()">Entrar</button>
+    </div>
+    <div style="font-size:10px; color:#5c6773;">Senha padrão inicial: admin2026</div>
+  </div>
+
+  <!-- PAINEL ADMIN -->
+  <div id="tela-admin" class="tela hidden" style="padding:0;">
+    <div class="admin-header">
+      <h2>Painel Administrativo</h2>
+      <button class="btn-link" onclick="sairAdmin()">Sair</button>
+    </div>
+    <div class="tabs" id="admin-tabs"></div>
+    <div class="tab-conteudo" id="admin-conteudo"></div>
+    <div class="rodape-admin">
+      <button class="btn-link" onclick="voltarInicio()">← Voltar ao simulador</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase (Realtime Database) — credenciais e ID da urna em firebase-config.js.
+     Se o arquivo não existir ou não estiver preenchido, o simulador continua
+     funcionando 100% offline via localStorage, sem travar. -->
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
+
+<script>
+/* ======================================================================
+   SIMULADOR DE URNA ELETRÔNICA — PROJETO EDUCACIONAL
+   WF Tecnology
+   Estrutura de dados centralizada (candidatos, ordem, configurações)
+   persistida em localStorage, com sincronização opcional via Firebase
+   Realtime Database (ver bloco "SINCRONIZAÇÃO COM FIREBASE" abaixo).
+   Nenhuma foto é gerada — o administrador deve fazer upload das imagens
+   reais que deseja utilizar.
+   ====================================================================== */
+
+const LS_KEYS = {
+  candidatos: 'urna_candidatos_v1',
+  config:     'urna_config_v1',
+  resultados: 'urna_resultados_v1',
+  sessao:     'urna_sessao_v1'
+};
+
+// Metadados fixos das ETAPAS de votação (rótulo, se é majoritário com vice,
+// e qual lista de candidatos usa — dadosCargoId). Os dois turnos de Senador
+// apontam para a MESMA lista de candidatos ('senador'), permitindo votar em
+// qualquer um dos dois nomes em qualquer uma das duas vagas/turnos.
+const CARGOS_META = {
+  'dep-federal':   { label: 'DEPUTADO FEDERAL',              labelCurto:'Deputado Federal',   majoritario:false, dadosCargoId:'dep-federal' },
+  'dep-estadual':  { label: 'DEPUTADO ESTADUAL',             labelCurto:'Deputado Estadual',  majoritario:false, dadosCargoId:'dep-estadual' },
+  'senador-1':      { label: 'SENADOR — 1º VOTO',            labelCurto:'Senador — 1ª vaga',  majoritario:false, dadosCargoId:'senador' },
+  'senador-2':      { label: 'SENADOR — 2º VOTO',            labelCurto:'Senador — 2ª vaga',  majoritario:false, dadosCargoId:'senador' },
+  'governador':     { label: 'GOVERNADOR E VICE-GOVERNADOR', labelCurto:'Governador',          majoritario:true,  dadosCargoId:'governador' },
+  'presidente':     { label: 'PRESIDENTE E VICE-PRESIDENTE', labelCurto:'Presidente',          majoritario:true,  dadosCargoId:'presidente' }
+};
+
+function candidatosPadrao(){
+  return {
+    'dep-federal': [
+      { numero:'5511', nome:'Charles Fernandes', foto:null, ativo:true }
+    ],
+    'dep-estadual': [
+      { numero:'55555', nome:'Ivana Bastos', foto:null, ativo:true },
+      { numero:'70111', nome:'Felipe Duarte', foto:null, ativo:true }
+    ],
+    'senador': [
+      { numero:'131', nome:'Rui Costa', foto:null, ativo:true },
+      { numero:'130', nome:'Jaques Wagner', foto:null, ativo:true }
+    ],
+    'governador': [
+      { numero:'13', nome:'Geronimo', vice:'Geraldinho', foto:null, fotoVice:null, ativo:true }
+    ],
+    'presidente': [
+      { numero:'13', nome:'Lula', vice:'Geraldo Alckmin', foto:null, fotoVice:null, ativo:true }
+    ]
+  };
+}
+
+function configPadrao(){
+  return {
+    ordem: ['dep-federal','dep-estadual','senador-1','senador-2','governador','presidente'],
+    digitos: {
+      'dep-federal':4, 'dep-estadual':5, 'senador':3, 'governador':2, 'presidente':2
+    },
+    senhaAdmin: 'admin2026',
+    somAtivado: true
+  };
+}
+
+function carregar(chave, padraoFn){
+  try{
+    const raw = localStorage.getItem(chave);
+    if(!raw) return padraoFn();
+    return JSON.parse(raw);
+  }catch(e){ return padraoFn(); }
+}
+function salvar(chave, obj){
+  try{
+    localStorage.setItem(chave, JSON.stringify(obj));
+    return true;
+  }catch(e){
+    console.error('Falha ao salvar em localStorage:', chave, e);
+    return false;
+  }
+}
+
+let candidatos = carregar(LS_KEYS.candidatos, candidatosPadrao);
+let config     = carregar(LS_KEYS.config, configPadrao);
+let resultados = carregar(LS_KEYS.resultados, () => ({}));
+let sessao     = carregar(LS_KEYS.sessao, () => ({ ativa:false, indiceCargo:0, totalVotantes:0, escolhasSenado:[] }));
+if(!sessao.escolhasSenado) sessao.escolhasSenado = [];
+
+function persistirTudo(){
+  const okC = salvar(LS_KEYS.candidatos, candidatos);
+  const okG = salvar(LS_KEYS.config, config);
+  const okR = salvar(LS_KEYS.resultados, resultados);
+  const okS = salvar(LS_KEYS.sessao, sessao);
+  if(!(okC && okG && okR && okS)){
+    toast('⚠️ Não foi possível salvar (armazenamento cheio). Use fotos menores.');
+  }
+  fbEnviarCandidatos();
+  fbEnviarConfig();
+  return okC && okG && okR && okS;
+}
+
+// Migra dados salvos no formato antigo (senador-1 / senador-2 separados)
+// para a lista única compartilhada 'senador'. Roda uma única vez.
+function migrarDadosSenado(){
+  let mudou = false;
+  if(candidatos['senador-1'] || candidatos['senador-2']){
+    if(!candidatos['senador'] || candidatos['senador'].length===0){
+      const vistos = new Set();
+      const combinados = [];
+      (candidatos['senador-1']||[]).concat(candidatos['senador-2']||[]).forEach(c=>{
+        if(!vistos.has(c.numero)){ vistos.add(c.numero); combinados.push(c); }
+      });
+      candidatos['senador'] = combinados;
+    }
+    delete candidatos['senador-1'];
+    delete candidatos['senador-2'];
+    mudou = true;
+  }
+  if(config.digitos && (config.digitos['senador-1']!=null || config.digitos['senador-2']!=null)){
+    if(config.digitos['senador']==null){
+      config.digitos['senador'] = config.digitos['senador-1'] || config.digitos['senador-2'] || 3;
+    }
+    delete config.digitos['senador-1'];
+    delete config.digitos['senador-2'];
+    mudou = true;
+  }
+  if(mudou) persistirTudo();
+}
+migrarDadosSenado();
+
+// garante estrutura de resultados para todas as ETAPAS de votação
+function garantirResultados(){
+  config.ordem.forEach(cargoId=>{
+    if(!resultados[cargoId]) resultados[cargoId] = { BRANCO:0, NULO:0 };
+  });
+}
+garantirResultados();
+
+/* ================= SINCRONIZAÇÃO COM FIREBASE (Realtime Database) =================
+   O simulador continua funcionando 100% offline via localStorage — o Firebase é
+   apenas uma camada extra de sincronização entre dispositivos/urnas, e nunca
+   impede o uso do app se estiver indisponível, mal configurado ou sem internet.
+
+   - candidatos/config: espelhados por inteiro entre os dispositivos (o último a
+     salvar "vence" — é o comportamento esperado, pois só o admin edita isso).
+   - votos e total de votantes: sincronizados por INCREMENTO atômico do Firebase,
+     para que várias urnas rodando ao mesmo tempo somem os votos corretamente em
+     vez de uma sobrescrever os votos já registrados pela outra.
+   - a sessão de votação em andamento (voto sendo digitado agora) NUNCA é enviada
+     ao Firebase — ela é sempre local a cada dispositivo/urna.
+   ==================================================================== */
+let fbDb = null;
+let fbPronto = false;
+let fbAplicandoRemoto = false; // evita eco ao aplicar dados vindos do próprio Firebase
+
+function fbInit(){
+  try{
+    if(typeof firebase === 'undefined' || typeof firebaseConfig === 'undefined') return;
+    if(!firebaseConfig.apiKey || firebaseConfig.apiKey.indexOf('SUA_API_KEY') === 0) return; // firebase-config.js ainda não preenchido
+    firebase.initializeApp(firebaseConfig);
+    fbDb = firebase.database();
+    fbPronto = true;
+    fbEscutarRemoto();
+  }catch(e){
+    console.error('Firebase indisponível — o simulador seguirá funcionando apenas com armazenamento local.', e);
+    fbPronto = false;
+  }
+}
+function fbRef(caminho){
+  return fbDb.ref('urnas/' + (typeof URNA_ID!=='undefined' && URNA_ID ? URNA_ID : 'padrao') + '/' + caminho);
+}
+function fbTelaAdminAberta(){
+  const el = document.getElementById('tela-admin');
+  return !!(el && !el.classList.contains('hidden'));
+}
+function fbEscutarRemoto(){
+  fbRef('candidatos').on('value', snap=>{
+    const val = snap.val();
+    if(!val) return;
+    fbAplicandoRemoto = true;
+    candidatos = val;
+    salvar(LS_KEYS.candidatos, candidatos);
+    if(fbTelaAdminAberta() && !edicaoEmAndamento) abrirAbaAdmin(abaAtual);
+    fbAplicandoRemoto = false;
+  });
+  fbRef('config').on('value', snap=>{
+    const val = snap.val();
+    if(!val) return;
+    fbAplicandoRemoto = true;
+    config = val;
+    salvar(LS_KEYS.config, config);
+    garantirResultados();
+    if(fbTelaAdminAberta()) abrirAbaAdmin(abaAtual);
+    fbAplicandoRemoto = false;
+  });
+  fbRef('resultados').on('value', snap=>{
+    const val = snap.val();
+    if(!val) return;
+    resultados = val;
+    garantirResultados();
+    salvar(LS_KEYS.resultados, resultados);
+    if(fbTelaAdminAberta() && abaAtual==='apuracao') abrirAbaAdmin('apuracao');
+  });
+  fbRef('totalVotantes').on('value', snap=>{
+    const val = snap.val();
+    if(val==null) return;
+    sessao.totalVotantes = val;
+    salvar(LS_KEYS.sessao, sessao);
+    if(fbTelaAdminAberta() && abaAtual==='apuracao') abrirAbaAdmin('apuracao');
+  });
+}
+function fbEnviarCandidatos(){
+  if(!fbPronto || fbAplicandoRemoto) return;
+  fbRef('candidatos').set(candidatos).catch(e=>console.error('Falha ao sincronizar candidatos com o Firebase:', e));
+}
+function fbEnviarConfig(){
+  if(!fbPronto || fbAplicandoRemoto) return;
+  fbRef('config').set(config).catch(e=>console.error('Falha ao sincronizar configurações com o Firebase:', e));
+}
+function fbIncrementarVoto(cargoId, chave){
+  if(!fbPronto) return;
+  fbRef('resultados/'+cargoId+'/'+chave).set(firebase.database.ServerValue.increment(1))
+    .catch(e=>console.error('Falha ao sincronizar voto com o Firebase:', e));
+}
+function fbIncrementarVotante(){
+  if(!fbPronto) return;
+  fbRef('totalVotantes').set(firebase.database.ServerValue.increment(1))
+    .catch(e=>console.error('Falha ao sincronizar total de votantes com o Firebase:', e));
+}
+function fbZerarApuracaoRemota(){
+  if(!fbPronto) return;
+  fbRef('resultados').remove().catch(e=>console.error('Falha ao zerar apuração no Firebase:', e));
+  fbRef('totalVotantes').set(0).catch(e=>console.error('Falha ao zerar total de votantes no Firebase:', e));
+}
+fbInit();
+
+/* ================= NAVEGAÇÃO ENTRE TELAS ================= */
+function mostrarTela(id){
+  document.querySelectorAll('.tela').forEach(t=>t.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+}
+function voltarInicio(){
+  document.getElementById('app').classList.remove('modo-admin');
+  mostrarTela('tela-inicial');
+}
+
+/* ================= FLUXO DE VOTAÇÃO ================= */
+let digitosAtuais = '';
+let candidatoEncontrado = null;
+
+function iniciarVotacao(){
+  if(sessao.ativa){
+    // sessão em andamento — retoma no cargo atual
+  } else {
+    sessao.ativa = true;
+    sessao.indiceCargo = 0;
+    sessao.escolhasSenado = [];
+    persistirTudo();
+  }
+  renderCargoAtual();
+  mostrarTela('tela-votacao');
+}
+
+function abrirNovaVotacao(){
+  if(!confirm('Isso limpa apenas a sessão de votação atual (não apaga candidatos nem resultados já registrados). Deseja continuar?')) return;
+  sessao.ativa = false;
+  sessao.indiceCargo = 0;
+  sessao.escolhasSenado = [];
+  persistirTudo();
+  toast('Sessão atual reiniciada.');
+}
+
+function cargoAtualId(){ return config.ordem[sessao.indiceCargo]; }
+
+function renderCargoAtual(){
+  digitosAtuais = '';
+  candidatoEncontrado = null;
+  const cargoId = cargoAtualId();
+  const meta = CARGOS_META[cargoId];
+
+  document.getElementById('lbl-cargo').textContent = meta.label;
+  document.getElementById('lbl-progresso').textContent =
+    'Etapa ' + (sessao.indiceCargo+1) + ' de ' + config.ordem.length;
+
+  renderTrilhaCargos();
+  atualizarDisplayNumero();
+  document.getElementById('msg-numero-errado').textContent = '';
+  esconderPainelCandidato();
+  renderTeclado();
+  document.getElementById('btn-confirma').disabled = true;
+}
+
+function renderTrilhaCargos(){
+  const wrap = document.getElementById('trilha-cargos');
+  wrap.innerHTML = '';
+  config.ordem.forEach((id,i)=>{
+    if(i>0){
+      const seta = document.createElement('span');
+      seta.className = 'crumb-seta';
+      seta.textContent = '›';
+      wrap.appendChild(seta);
+    }
+    const chip = document.createElement('span');
+    chip.className = 'crumb' + (i===sessao.indiceCargo?' atual':(i<sessao.indiceCargo?' feito':''));
+    chip.textContent = CARGOS_META[id].labelCurto;
+    wrap.appendChild(chip);
+  });
+  // rola até a etapa atual ficar visível
+  const atual = wrap.querySelector('.crumb.atual');
+  if(atual) atual.scrollIntoView({inline:'center', block:'nearest'});
+}
+
+function criarPontosBraille(){
+  const dots = document.createElement('span');
+  dots.className = 'pontos-braille';
+  for(let i=0;i<6;i++) dots.appendChild(document.createElement('span'));
+  return dots;
+}
+
+function renderTeclado(){
+  // layout físico 4x4, igual ao modelo de referência:
+  // linha1: 1 2 3 BRANCO | linha2: 4 5 6 CORRIGE | linha3: 7 8 9 CONFIRMA | linha4: 0 _ _ _
+  const wrap = document.getElementById('teclado');
+  wrap.innerHTML = '';
+
+  function criarTeclaNum(digito){
+    const b = document.createElement('button');
+    b.className = 'tecla-num';
+    b.textContent = digito;
+    b.appendChild(criarPontosBraille());
+    b.onclick = ()=> teclaPressionada(digito);
+    return b;
+  }
+  function criarTeclaFuncao(classe, rotulo, onClick, id){
+    const b = document.createElement('button');
+    b.className = 'tecla-funcao ' + classe;
+    if(id) b.id = id;
+    const span = document.createElement('span');
+    span.textContent = rotulo;
+    b.appendChild(span);
+    b.appendChild(criarPontosBraille());
+    if(onClick) b.onclick = onClick;
+    return b;
+  }
+  function criarCelulaVazia(){
+    const d = document.createElement('div');
+    d.className = 'tecla-vazia';
+    return d;
+  }
+
+  wrap.appendChild(criarTeclaNum('1'));
+  wrap.appendChild(criarTeclaNum('2'));
+  wrap.appendChild(criarTeclaNum('3'));
+  wrap.appendChild(criarTeclaFuncao('tecla-branco', 'BRANCO', votoBranco));
+
+  wrap.appendChild(criarTeclaNum('4'));
+  wrap.appendChild(criarTeclaNum('5'));
+  wrap.appendChild(criarTeclaNum('6'));
+  wrap.appendChild(criarTeclaFuncao('tecla-corrige', 'CORRIGE', corrigeDigitacao));
+
+  wrap.appendChild(criarTeclaNum('7'));
+  wrap.appendChild(criarTeclaNum('8'));
+  wrap.appendChild(criarTeclaNum('9'));
+  const btnConfirma = criarTeclaFuncao('tecla-confirma', 'CONFIRMA', tentarConfirmar, 'btn-confirma');
+  btnConfirma.disabled = true;
+  wrap.appendChild(btnConfirma);
+
+  wrap.appendChild(criarTeclaNum('0'));
+  wrap.appendChild(criarCelulaVazia());
+  wrap.appendChild(criarCelulaVazia());
+  wrap.appendChild(criarCelulaVazia());
+}
+
+/* ================= SONS DE VOTAÇÃO (sintetizados via Web Audio, sem arquivos externos) ================= */
+let audioCtx = null;
+function getAudioCtx(){
+  if(!audioCtx){
+    try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ audioCtx = null; }
+  }
+  if(audioCtx && audioCtx.state==='suspended'){ audioCtx.resume(); }
+  return audioCtx;
+}
+function beep(freq, duracaoMs, tipoOnda, volume){
+  if(config.somAtivado===false) return;
+  const ctx = getAudioCtx();
+  if(!ctx) return;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = tipoOnda || 'square';
+  osc.frequency.value = freq;
+  const vol = volume!=null ? volume : 0.06;
+  const now = ctx.currentTime;
+  gain.gain.setValueAtTime(vol, now);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + duracaoMs/1000);
+  osc.connect(gain); gain.connect(ctx.destination);
+  osc.start(now);
+  osc.stop(now + duracaoMs/1000 + 0.03);
+}
+function tocarSom(tipo){
+  switch(tipo){
+    case 'tecla':      beep(880, 65, 'square', 0.05); break;
+    case 'encontrado': beep(1046, 90, 'sine', 0.05); break;
+    case 'corrige':    beep(300, 130, 'square', 0.06); break;
+    case 'branco':     beep(520, 150, 'triangle', 0.06); break;
+    case 'erro':       beep(180, 260, 'sawtooth', 0.07); break;
+    case 'confirma':
+      beep(660, 90, 'square', 0.06);
+      setTimeout(()=>beep(990, 140, 'square', 0.06), 90);
+      break;
+    case 'fim':
+      beep(523, 120, 'triangle', 0.07);
+      setTimeout(()=>beep(659, 120, 'triangle', 0.07), 130);
+      setTimeout(()=>beep(784, 240, 'triangle', 0.07), 260);
+      break;
+  }
+}
+
+function teclaPressionada(t){
+  tocarSom('tecla');
+  const cargoId = cargoAtualId();
+  const maxDigitos = config.digitos[CARGOS_META[cargoId].dadosCargoId] || 5;
+
+  if(digitosAtuais.length < maxDigitos){
+    digitosAtuais += t;
+  }
+  atualizarDisplayNumero();
+
+  if(digitosAtuais.length === maxDigitos){
+    buscarCandidato();
+  } else {
+    esconderPainelCandidato();
+    document.getElementById('btn-confirma').disabled = true;
+  }
+}
+
+function atualizarDisplayNumero(){
+  const cargoId = cargoAtualId();
+  const maxDigitos = config.digitos[CARGOS_META[cargoId].dadosCargoId] || 5;
+  const wrap = document.getElementById('caixas-digitos');
+  wrap.innerHTML = '';
+  for(let i=0;i<maxDigitos;i++){
+    const caixa = document.createElement('div');
+    const d = digitosAtuais[i];
+    caixa.className = 'caixa-digito ' + (d!=null ? 'preenchida' : 'vazia');
+    caixa.textContent = d!=null ? d : '0';
+    wrap.appendChild(caixa);
+  }
+}
+
+let motivoInvalido = 'NÚMERO NÃO ENCONTRADO';
+
+function buscarCandidato(){
+  const cargoId = cargoAtualId();
+  const meta = CARGOS_META[cargoId];
+  const dadosId = meta.dadosCargoId;
+  const lista = (candidatos[dadosId]||[]).filter(c=>c.ativo!==false);
+  let achado = lista.find(c=> c.numero === digitosAtuais);
+
+  // impede votar duas vezes no mesmo candidato ao senado dentro da mesma sessão
+  let duplicadoSenado = false;
+  if(achado && dadosId==='senador' && (sessao.escolhasSenado||[]).includes(digitosAtuais)){
+    duplicadoSenado = true;
+    achado = null;
+  }
+
+  const painel = document.getElementById('painel-candidato');
+  const msgErrado = document.getElementById('msg-numero-errado');
+
+  if(achado){
+    candidatoEncontrado = achado;
+    painel.classList.remove('oculto');
+    msgErrado.textContent = '';
+    const fotoWrap = document.getElementById('foto-candidato-wrap');
+    fotoWrap.innerHTML = achado.foto
+      ? '<img src="'+achado.foto+'">'
+      : '<div class="sem-foto">FOTO NÃO<br>CADASTRADA</div>';
+    fotoWrap.className = 'foto-wrap' + (achado.foto?'':' sem-foto');
+
+    let infoHtml = '<div class="num">'+achado.numero+'</div><div class="nome">'+escapeHtml(achado.nome)+'</div>';
+    if(meta.majoritario && achado.vice){
+      infoHtml += '<div class="vice">Vice: <b>'+escapeHtml(achado.vice)+'</b></div>';
+    }
+    document.getElementById('info-candidato').innerHTML = infoHtml;
+    tocarSom('encontrado');
+  } else {
+    candidatoEncontrado = null;
+    painel.classList.add('oculto');
+    document.getElementById('foto-candidato-wrap').innerHTML = '';
+    motivoInvalido = duplicadoSenado ? 'VOCÊ JÁ VOTOU NESTE CANDIDATO NESTA SESSÃO' : 'NÚMERO ERRADO';
+    msgErrado.textContent = duplicadoSenado ? 'JÁ VOTADO NESTA SESSÃO' : 'NÚMERO ERRADO';
+    tocarSom('erro');
+  }
+  document.getElementById('btn-confirma').disabled = false;
+}
+
+function esconderPainelCandidato(){
+  const painel = document.getElementById('painel-candidato');
+  painel.classList.add('oculto');
+  const msgErrado = document.getElementById('msg-numero-errado');
+  if(msgErrado) msgErrado.textContent = '';
+}
+
+function corrigeDigitacao(){
+  tocarSom('corrige');
+  digitosAtuais = '';
+  candidatoEncontrado = null;
+  atualizarDisplayNumero();
+  esconderPainelCandidato();
+  document.getElementById('btn-confirma').disabled = true;
+  fecharOverlayVotacao();
+}
+
+function tentarConfirmar(){
+  if(candidatoEncontrado){
+    // a própria tela com foto/nome do candidato já é a confirmação —
+    // um único toque em CONFIRMA registra o voto, como na urna real.
+    confirmarVotoCandidato();
+  } else {
+    mostrarOverlayNulo();
+  }
+}
+
+function confirmarVotoCandidato(){
+  tocarSom('confirma');
+  const cargoId = cargoAtualId();
+  registrarVoto(cargoId, candidatoEncontrado.numero);
+  fecharOverlayVotacao();
+  avancarCargo();
+}
+
+function votoBranco(){
+  tocarSom('branco');
+  const html = `
+    <div class="overlay-caixa">
+      <h3>VOTO EM BRANCO</h3>
+      <p>Deseja confirmar o voto em branco para este cargo?</p>
+      <div class="linha-btns">
+        <button class="btn btn-secundario" onclick="fecharOverlayVotacao()">CORRIGE</button>
+        <button class="btn btn-primario" onclick="confirmarVotoBranco()">CONFIRMA</button>
+      </div>
+    </div>`;
+  abrirOverlayVotacao(html);
+}
+function confirmarVotoBranco(){
+  tocarSom('confirma');
+  const cargoId = cargoAtualId();
+  registrarVoto(cargoId, 'BRANCO');
+  fecharOverlayVotacao();
+  avancarCargo();
+}
+
+function mostrarOverlayNulo(){
+  tocarSom('erro');
+  const html = `
+    <div class="overlay-caixa">
+      <h3>${motivoInvalido}</h3>
+      <p>Deseja confirmar o voto nulo?</p>
+      <div class="linha-btns">
+        <button class="btn btn-secundario" onclick="fecharOverlayVotacao()">CORRIGE</button>
+        <button class="btn btn-primario" onclick="confirmarVotoNulo()">CONFIRMA</button>
+      </div>
+    </div>`;
+  abrirOverlayVotacao(html);
+}
+function confirmarVotoNulo(){
+  tocarSom('erro');
+  const cargoId = cargoAtualId();
+  registrarVoto(cargoId, 'NULO');
+  fecharOverlayVotacao();
+  avancarCargo();
+}
+
+function abrirOverlayVotacao(html){
+  const wrap = document.getElementById('overlay-votacao');
+  wrap.innerHTML = '<div class="overlay">'+html+'</div>';
+}
+function fecharOverlayVotacao(){
+  document.getElementById('overlay-votacao').innerHTML = '';
+}
+
+function registrarVoto(cargoId, chave){
+  if(!resultados[cargoId]) resultados[cargoId] = { BRANCO:0, NULO:0 };
+  if(!resultados[cargoId][chave]) resultados[cargoId][chave] = 0;
+  resultados[cargoId][chave] += 1;
+
+  // marca o candidato como já escolhido nesta sessão, se for turno de senador
+  const meta = CARGOS_META[cargoId];
+  if(meta && meta.dadosCargoId==='senador' && chave!=='BRANCO' && chave!=='NULO'){
+    if(!sessao.escolhasSenado) sessao.escolhasSenado = [];
+    sessao.escolhasSenado.push(chave);
+  }
+  persistirTudo();
+  fbIncrementarVoto(cargoId, chave);
+}
+
+function avancarCargo(){
+  sessao.indiceCargo += 1;
+  if(sessao.indiceCargo >= config.ordem.length){
+    finalizarSessao();
+  } else {
+    persistirTudo();
+    renderCargoAtual();
+  }
+}
+
+const DIAS_SEMANA = ['DOM','SEG','TER','QUA','QUI','SEX','SAB'];
+let intervalRelogioFim = null;
+
+function atualizarRelogioFim(){
+  const el = document.getElementById('fim-relogio');
+  if(!el) return;
+  const d = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  el.textContent = DIAS_SEMANA[d.getDay()] + ' ' + pad(d.getDate()) + '/' + pad(d.getMonth()+1) + '/' + d.getFullYear() +
+    ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+}
+
+function finalizarSessao(){
+  tocarSom('fim');
+  sessao.ativa = false;
+  sessao.indiceCargo = 0;
+  sessao.totalVotantes = (sessao.totalVotantes||0) + 1;
+  persistirTudo();
+  fbIncrementarVotante();
+  mostrarTela('tela-fim');
+  atualizarRelogioFim();
+  clearInterval(intervalRelogioFim);
+  intervalRelogioFim = setInterval(atualizarRelogioFim, 1000);
+  setTimeout(()=>{
+    clearInterval(intervalRelogioFim);
+    mostrarTela('tela-inicial');
+  }, 4500);
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s==null? '' : String(s);
+  return d.innerHTML;
+}
+function toast(msg){
+  const el = document.createElement('div');
+  el.className = 'msg-toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(()=> el.remove(), 2200);
+}
+
+/* ======================================================================
+   ÁREA ADMINISTRATIVA
+   ====================================================================== */
+// Senha mestra fixa de acesso rápido (gatilho: 5 cliques no cabeçalho).
+// Continua válida independente da senha administrativa configurável.
+const SENHA_MESTRA = '05048989';
+
+let contagemCliquesHeader = 0;
+let timerCliquesHeader = null;
+let acessoViaAtalhoSecreto = false;
+
+function cliqueSecretoHeader(){
+  contagemCliquesHeader++;
+  clearTimeout(timerCliquesHeader);
+  timerCliquesHeader = setTimeout(()=>{ contagemCliquesHeader = 0; }, 1800);
+  if(contagemCliquesHeader >= 5){
+    contagemCliquesHeader = 0;
+    acessoViaAtalhoSecreto = true;
+    abrirLoginAdmin();
+  }
+}
+
+function abrirLoginAdmin(){
+  document.getElementById('input-senha-admin').value = '';
+  document.getElementById('erro-senha').style.display = 'none';
+  mostrarTela('tela-admin-login');
+}
+function tentarLoginAdmin(){
+  const val = document.getElementById('input-senha-admin').value;
+  if(val === config.senhaAdmin || val === SENHA_MESTRA){
+    document.getElementById('app').classList.add('modo-admin');
+    mostrarTela('tela-admin');
+    if(acessoViaAtalhoSecreto){
+      abrirAbaAdmin('config');
+    } else {
+      abrirAbaAdmin('candidatos');
+    }
+    acessoViaAtalhoSecreto = false;
+  } else {
+    document.getElementById('erro-senha').style.display = 'block';
+  }
+}
+function sairAdmin(){
+  document.getElementById('app').classList.remove('modo-admin');
+  voltarInicio();
+}
+
+const ABAS_ADMIN = [
+  { id:'candidatos', label:'Candidatos' },
+  { id:'ordem',      label:'Ordem/Dígitos' },
+  { id:'apuracao',   label:'Apuração' },
+  { id:'config',     label:'Configurações' }
+];
+let abaAtual = 'candidatos';
+
+function abrirAbaAdmin(id){
+  abaAtual = id;
+  const tabsWrap = document.getElementById('admin-tabs');
+  tabsWrap.innerHTML = '';
+  ABAS_ADMIN.forEach(a=>{
+    const b = document.createElement('button');
+    b.className = 'tab-btn' + (a.id===id?' ativo':'');
+    b.textContent = a.label;
+    b.onclick = ()=> abrirAbaAdmin(a.id);
+    tabsWrap.appendChild(b);
+  });
+  const conteudo = document.getElementById('admin-conteudo');
+  if(id==='candidatos') conteudo.innerHTML = renderAbaCandidatos();
+  if(id==='ordem')      conteudo.innerHTML = renderAbaOrdem();
+  if(id==='apuracao')   conteudo.innerHTML = renderAbaApuracao();
+  if(id==='config')     conteudo.innerHTML = renderAbaConfig();
+}
+
+/* ---------- ABA CANDIDATOS ---------- */
+let cargoSelecionadoAdmin = 'dep-federal';
+
+// Lista única de "listas de candidatos" para gerenciamento no admin.
+// Os dois turnos de Senador compartilham a mesma lista ('senador'),
+// então aparecem como uma única opção aqui.
+function listaCargosAdmin(){
+  const vistos = new Set();
+  const resultado = [];
+  config.ordem.forEach(id=>{
+    const meta = CARGOS_META[id];
+    const key = meta.dadosCargoId;
+    if(!vistos.has(key)){
+      vistos.add(key);
+      resultado.push({
+        id: key,
+        label: key==='senador' ? 'SENADOR (candidatos válidos para as 2 vagas)' : meta.label,
+        majoritario: meta.majoritario
+      });
+    }
+  });
+  return resultado;
+}
+
+function renderAbaCandidatos(){
+  const listaCargos = listaCargosAdmin();
+  let opcoesCargo = listaCargos.map(c=>
+    `<option value="${c.id}" ${c.id===cargoSelecionadoAdmin?'selected':''}>${c.label}</option>`
+  ).join('');
+
+  const meta = listaCargos.find(c=>c.id===cargoSelecionadoAdmin) || listaCargos[0];
+  const lista = candidatos[cargoSelecionadoAdmin] || [];
+
+  let itensHtml = lista.map((c,i)=>{
+    const inativo = c.ativo===false;
+    return `
+      <div class="item-cand">
+        <img class="mini-foto" src="${c.foto || fotoPlaceholder()}">
+        <div class="dados">
+          <span class="n">${c.numero}</span> — ${escapeHtml(c.nome)}
+          ${meta.majoritario && c.vice ? '<br><span style="color:#a9b7c4;">Vice: '+escapeHtml(c.vice)+'</span>' : ''}
+          ${inativo ? '<br><span class="inativo-tag">INATIVO</span>' : ''}
+        </div>
+        <div class="btns">
+          <button style="background:#2d6a9f;" onclick="editarCandidato('${cargoSelecionadoAdmin}',${i})">Editar</button>
+          <button style="background:${inativo?'#1e8449':'#e08e0b'};" onclick="toggleAtivoCandidato('${cargoSelecionadoAdmin}',${i})">${inativo?'Ativar':'Desativar'}</button>
+          <button style="background:#c0392b;" onclick="excluirCandidato('${cargoSelecionadoAdmin}',${i})">Excluir</button>
+        </div>
+      </div>`;
+  }).join('') || '<p style="font-size:12px;color:#7f8c99;">Nenhum candidato cadastrado para este cargo.</p>';
+
+  const notaSenado = cargoSelecionadoAdmin==='senador'
+    ? '<p style="font-size:10.5px;color:#8ea3b8;margin-top:6px;">Esta lista vale para os dois turnos de Senador — o eleitor pode escolher qualquer um destes nomes em qualquer um dos dois votos, em qualquer ordem, sem repetir o mesmo candidato.</p>'
+    : '';
+
+  return `
+    <div class="card">
+      <h4>Selecionar cargo</h4>
+      <select onchange="cargoSelecionadoAdmin=this.value; abrirAbaAdmin('candidatos')">${opcoesCargo}</select>
+      ${notaSenado}
+      <div class="lista-candidatos">${itensHtml}</div>
+    </div>
+    <div class="card" id="form-candidato-card">
+      ${formularioCandidato(meta.majoritario)}
+    </div>
+  `;
+}
+
+function fotoPlaceholder(){
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="50"><rect width="40" height="50" fill="%23232a33"/></svg>'
+  );
+}
+
+let edicaoEmAndamento = null; // {cargoId, index} ou null p/ novo
+let fotoTemp = null, fotoViceTemp = null;
+
+function formularioCandidato(majoritario){
+  const editando = edicaoEmAndamento && edicaoEmAndamento.cargoId===cargoSelecionadoAdmin;
+  const cand = editando ? candidatos[cargoSelecionadoAdmin][edicaoEmAndamento.index] : null;
+  const opcoesCargoForm = listaCargosAdmin().map(c=>
+    `<option value="${c.id}" ${c.id===cargoSelecionadoAdmin?'selected':''}>${c.label}</option>`
+  ).join('');
+  return `
+    <h4>${editando? 'Editar candidato':'Adicionar candidato'}</h4>
+    <label class="campo">Cargo / vaga a que concorre</label>
+    ${editando
+      ? `<select disabled style="opacity:.7;">${opcoesCargoForm}</select>
+         <p style="font-size:10px;color:#8ea3b8;margin:4px 0 0;">Para mudar o cargo de um candidato, exclua e cadastre-o novamente no cargo correto.</p>`
+      : `<select id="f-cargo" onchange="cargoSelecionadoAdmin=this.value; abrirAbaAdmin('candidatos')">${opcoesCargoForm}</select>`
+    }
+    <div class="row" style="margin-top:6px;">
+      <div>
+        <label class="campo">Número</label>
+        <input type="text" id="f-numero" value="${cand?cand.numero:''}" placeholder="Ex: 13">
+      </div>
+      <div>
+        <label class="campo">Nome</label>
+        <input type="text" id="f-nome" value="${cand?escapeHtml(cand.nome):''}" placeholder="Nome do candidato">
+      </div>
+    </div>
+    <label class="campo">Foto do candidato (JPG/PNG)</label>
+    <input type="file" id="f-foto" accept=".jpg,.jpeg,.png" onchange="processarFoto(this,'principal')">
+    <div id="preview-foto-principal">${(cand&&cand.foto)||fotoTemp ? '<img src="'+(fotoTemp||cand.foto)+'" style="width:60px;height:75px;object-fit:cover;border-radius:4px;margin-top:6px;">':''}</div>
+    ${!editando ? '<p style="font-size:10px;color:#8ea3b8;margin:4px 0 0;">A foto só é salva quando você clicar em "Adicionar candidato" abaixo.</p>' : ''}
+    ${majoritario ? `
+      <label class="campo">Nome do vice</label>
+      <input type="text" id="f-vice" value="${cand&&cand.vice?escapeHtml(cand.vice):''}" placeholder="Nome do vice">
+      <label class="campo">Foto do vice (JPG/PNG)</label>
+      <input type="file" id="f-foto-vice" accept=".jpg,.jpeg,.png" onchange="processarFoto(this,'vice')">
+      <div id="preview-foto-vice">${(cand&&cand.fotoVice)||fotoViceTemp ? '<img src="'+(fotoViceTemp||cand.fotoVice)+'" style="width:60px;height:75px;object-fit:cover;border-radius:4px;margin-top:6px;">':''}</div>
+    ` : ''}
+    <div class="row" style="margin-top:12px;">
+      ${editando?'<button class="btn btn-secundario" onclick="cancelarEdicaoCandidato()">Cancelar</button>':''}
+      <button class="btn btn-primario" onclick="salvarCandidato(${majoritario})">${editando?'Salvar alterações':'Adicionar candidato'}</button>
+    </div>
+  `;
+}
+
+function processarFoto(input, tipo){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const img = new Image();
+    img.onload = function(){
+      const canvas = document.createElement('canvas');
+      const W=300, H=380;
+      canvas.width=W; canvas.height=H;
+      const ctx = canvas.getContext('2d');
+      // recorte central mantendo proporção (cover)
+      const escala = Math.max(W/img.width, H/img.height);
+      const sw = W/escala, sh = H/escala;
+      const sx = (img.width-sw)/2, sy=(img.height-sh)/2;
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+      if(tipo==='principal') fotoTemp = dataUrl; else fotoViceTemp = dataUrl;
+
+      // Atualiza só a prévia da foto, sem reconstruir o formulário inteiro
+      // (isso evita apagar Número/Nome que já estejam digitados).
+      const previewId = tipo==='principal' ? 'preview-foto-principal' : 'preview-foto-vice';
+      const previewEl = document.getElementById(previewId);
+      if(previewEl){
+        previewEl.innerHTML = '<img src="'+dataUrl+'" style="width:60px;height:75px;object-fit:cover;border-radius:4px;margin-top:6px;">';
+      }
+
+      // Se já existe um candidato em edição, salva a foto imediatamente
+      // (não fica dependendo de clicar em "Salvar alterações" depois).
+      const editando = edicaoEmAndamento && edicaoEmAndamento.cargoId===cargoSelecionadoAdmin;
+      if(editando){
+        const atual = candidatos[cargoSelecionadoAdmin][edicaoEmAndamento.index];
+        if(tipo==='principal') atual.foto = dataUrl; else atual.fotoVice = dataUrl;
+        const ok = persistirTudo();
+        if(ok) toast('Foto salva.');
+        // atualiza a miniatura na lista de candidatos, se estiver visível
+        const miniImgs = document.querySelectorAll('.lista-candidatos .item-cand .mini-foto');
+        if(miniImgs[edicaoEmAndamento.index] && tipo==='principal'){
+          miniImgs[edicaoEmAndamento.index].src = dataUrl;
+        }
+      }
+    };
+    img.onerror = function(){ toast('Não foi possível ler esta imagem.'); };
+    img.src = e.target.result;
+  };
+  reader.onerror = function(){ toast('Falha ao ler o arquivo de imagem.'); };
+  reader.readAsDataURL(file);
+}
+
+function salvarCandidato(majoritario){
+  const numero = document.getElementById('f-numero').value.trim();
+  const nome = document.getElementById('f-nome').value.trim();
+  if(!numero || !nome){ toast('Preencha número e nome.'); return; }
+  if(!/^[0-9]+$/.test(numero)){ toast('O número deve conter apenas dígitos (0-9).'); return; }
+
+  const dadosId = cargoSelecionadoAdmin;
+  const maxDigitos = config.digitos[dadosId];
+  if(maxDigitos && numero.length !== maxDigitos){
+    toast('Este cargo está configurado para números de ' + maxDigitos + ' dígito(s) — "'+numero+'" tem ' + numero.length + '. Ajuste o número ou a quantidade de dígitos em "Ordem/Dígitos".');
+    return;
+  }
+
+  const editandoAgora = edicaoEmAndamento && edicaoEmAndamento.cargoId===cargoSelecionadoAdmin;
+  const listaAtual = candidatos[dadosId] || [];
+  const numeroDuplicado = listaAtual.some((c,i)=>
+    c.numero===numero && !(editandoAgora && i===edicaoEmAndamento.index)
+  );
+  if(numeroDuplicado){
+    toast('Já existe um candidato com o número '+numero+' cadastrado neste cargo.');
+    return;
+  }
+
+  const novo = { numero, nome, ativo:true };
+  if(majoritario){
+    novo.vice = document.getElementById('f-vice') ? document.getElementById('f-vice').value.trim() : '';
+  }
+
+  if(!candidatos[cargoSelecionadoAdmin]) candidatos[cargoSelecionadoAdmin]=[];
+
+  if(edicaoEmAndamento && edicaoEmAndamento.cargoId===cargoSelecionadoAdmin){
+    const atual = candidatos[cargoSelecionadoAdmin][edicaoEmAndamento.index];
+    novo.foto = fotoTemp || atual.foto || null;
+    if(majoritario) novo.fotoVice = fotoViceTemp || atual.fotoVice || null;
+    novo.ativo = atual.ativo;
+    candidatos[cargoSelecionadoAdmin][edicaoEmAndamento.index] = novo;
+    toast('Candidato atualizado.');
+  } else {
+    novo.foto = fotoTemp || null;
+    if(majoritario) novo.fotoVice = fotoViceTemp || null;
+    candidatos[cargoSelecionadoAdmin].push(novo);
+    toast('Candidato adicionado.');
+  }
+  edicaoEmAndamento = null;
+  fotoTemp = null; fotoViceTemp = null;
+  persistirTudo();
+  abrirAbaAdmin('candidatos');
+}
+
+function editarCandidato(cargoId, index){
+  cargoSelecionadoAdmin = cargoId;
+  edicaoEmAndamento = { cargoId, index };
+  fotoTemp = null; fotoViceTemp=null;
+  abrirAbaAdmin('candidatos');
+}
+function cancelarEdicaoCandidato(){
+  edicaoEmAndamento = null;
+  fotoTemp = null; fotoViceTemp=null;
+  abrirAbaAdmin('candidatos');
+}
+function toggleAtivoCandidato(cargoId, index){
+  const c = candidatos[cargoId][index];
+  c.ativo = c.ativo===false ? true : false;
+  persistirTudo();
+  abrirAbaAdmin('candidatos');
+}
+function excluirCandidato(cargoId, index){
+  if(!confirm('Excluir este candidato definitivamente?')) return;
+  candidatos[cargoId].splice(index,1);
+  // evita corromper uma edição em andamento cujo índice acabou de deslocar
+  if(edicaoEmAndamento && edicaoEmAndamento.cargoId===cargoId){
+    edicaoEmAndamento = null;
+    fotoTemp = null; fotoViceTemp = null;
+  }
+  persistirTudo();
+  abrirAbaAdmin('candidatos');
+}
+
+/* ---------- ABA ORDEM / DÍGITOS ---------- */
+function renderAbaOrdem(){
+  let itens = config.ordem.map((id,i)=>{
+    const dadosId = CARGOS_META[id].dadosCargoId;
+    return `
+    <div class="ordem-item">
+      <div class="nome-c">${i+1}. ${CARGOS_META[id].label}</div>
+      <label style="font-size:10px;color:#8ea3b8;">Dígitos:
+        <input type="number" min="1" max="6" value="${config.digitos[dadosId]}" style="width:48px; padding:4px;"
+          onchange="alterarDigitos('${dadosId}', this.value)">
+      </label>
+      <div class="setas">
+        <button onclick="moverCargo(${i},-1)" ${i===0?'disabled':''}>▲</button>
+        <button onclick="moverCargo(${i},1)" ${i===config.ordem.length-1?'disabled':''}>▼</button>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="card"><h4>Ordem de votação e quantidade de dígitos por cargo</h4>
+    <p style="font-size:10.5px;color:#8ea3b8;">Os dois turnos de Senador compartilham a mesma quantidade de dígitos, por usarem a mesma lista de candidatos.</p>
+    ${itens}</div>`;
+}
+function moverCargo(i, dir){
+  const j = i+dir;
+  if(j<0 || j>=config.ordem.length) return;
+  const tmp = config.ordem[i];
+  config.ordem[i] = config.ordem[j];
+  config.ordem[j] = tmp;
+  persistirTudo();
+  abrirAbaAdmin('ordem');
+}
+function alterarDigitos(dadosCargoId, val){
+  const n = parseInt(val,10);
+  if(n>0 && n<=6){ config.digitos[dadosCargoId] = n; persistirTudo(); }
+}
+
+/* ---------- ABA APURAÇÃO ---------- */
+function renderAbaApuracao(){
+  let totalGeralVotos = 0;
+  config.ordem.forEach(id=>{
+    const r = resultados[id] || {};
+    Object.keys(r).forEach(k=> totalGeralVotos += r[k]);
+  });
+
+  let statHtml = `
+    <div class="stat-grid">
+      <div class="stat-box"><div class="v">${sessao.totalVotantes||0}</div><div class="l">TOTAL DE VOTANTES</div></div>
+      <div class="stat-box"><div class="v">${totalGeralVotos}</div><div class="l">TOTAL DE VOTOS REGISTRADOS</div></div>
+    </div>`;
+
+  let cargosHtml = config.ordem.map(cargoId=>{
+    const meta = CARGOS_META[cargoId];
+    const r = resultados[cargoId] || { BRANCO:0, NULO:0 };
+    const cands = (candidatos[meta.dadosCargoId]||[]);
+    let totalCargo = 0;
+    Object.keys(r).forEach(k=> totalCargo += r[k]);
+
+    let linhas = cands.map(c=>{
+      const v = r[c.numero]||0;
+      const pct = totalCargo>0 ? (v/totalCargo*100).toFixed(1) : '0.0';
+      return `<tr>
+        <td>${c.numero}</td><td>${escapeHtml(c.nome)}${c.vice?' / '+escapeHtml(c.vice):''}</td>
+        <td>${v}</td><td>${pct}%<div class="barra-bg"><div class="barra-fill" style="width:${pct}%"></div></div></td>
+      </tr>`;
+    }).join('');
+
+    const brancoV = r.BRANCO||0, nuloV = r.NULO||0;
+    const pctBranco = totalCargo>0 ? (brancoV/totalCargo*100).toFixed(1) : '0.0';
+    const pctNulo = totalCargo>0 ? (nuloV/totalCargo*100).toFixed(1) : '0.0';
+    linhas += `<tr><td>—</td><td>Brancos</td><td>${brancoV}</td><td>${pctBranco}%</td></tr>`;
+    linhas += `<tr><td>—</td><td>Nulos</td><td>${nuloV}</td><td>${pctNulo}%</td></tr>`;
+
+    return `
+      <div class="card">
+        <h4>${meta.label} — total: ${totalCargo} votos</h4>
+        <div class="tabela-scroll">
+          <table class="resultados">
+            <thead><tr><th>Nº</th><th>Candidato</th><th>Votos</th><th>%</th></tr></thead>
+            <tbody>${linhas}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }).join('');
+
+  return statHtml + cargosHtml + `
+    <div class="card">
+      <button class="btn btn-perigo btn-full" onclick="zerarApuracao()">ZERAR TODA A APURAÇÃO</button>
+    </div>`;
+}
+
+function zerarApuracao(){
+  if(!confirm('ATENÇÃO: isso apagará TODOS os resultados e o total de votantes. Os candidatos cadastrados NÃO serão apagados. Deseja continuar?')) return;
+  if(!confirm('Confirmação final: tem certeza absoluta que deseja zerar toda a apuração?')) return;
+  resultados = {};
+  garantirResultados();
+  sessao.totalVotantes = 0;
+  persistirTudo();
+  fbZerarApuracaoRemota();
+  toast('Apuração zerada.');
+  abrirAbaAdmin('apuracao');
+}
+
+/* ---------- ABA CONFIGURAÇÕES ---------- */
+function renderAbaConfig(){
+  const somLigado = config.somAtivado !== false;
+  return `
+    <div class="card">
+      <h4>💾 Backup de candidatos, fotos e configurações</h4>
+      <p style="font-size:11.5px;color:#8ea3b8;">Baixa um arquivo .json com tudo (inclusive as fotos). Guarde esse arquivo — ele permite restaurar os candidatos em qualquer navegador ou dispositivo, mesmo se o armazenamento deste navegador for apagado.</p>
+      <button class="btn btn-primario btn-full" onclick="exportarBackup()">Baixar backup completo</button>
+      <label class="campo" style="margin-top:10px;">Restaurar a partir de um backup (.json)</label>
+      <input type="file" id="f-importar-backup" accept=".json" onchange="importarBackup(this)">
+      <p style="font-size:10px;color:#8ea3b8;margin-top:4px;">Atenção: restaurar substitui TODOS os candidatos, fotos, configurações e resultados atuais.</p>
+    </div>
+    <div class="card">
+      <h4>Sons de votação</h4>
+      <p style="font-size:11.5px;color:#8ea3b8;">Bipes de tecla, confirmação, voto em branco/nulo e finalização.</p>
+      <button class="btn ${somLigado?'btn-primario':'btn-secundario'} btn-full" onclick="alternarSom()">
+        ${somLigado?'🔊 Som ativado (clique para desativar)':'🔇 Som desativado (clique para ativar)'}
+      </button>
+    </div>
+    <div class="card">
+      <h4>Alterar senha administrativa</h4>
+      <label class="campo">Senha atual</label>
+      <input type="password" id="senha-atual">
+      <label class="campo">Nova senha</label>
+      <input type="password" id="senha-nova">
+      <button class="btn btn-primario" style="margin-top:10px;" onclick="alterarSenhaAdmin()">Salvar nova senha</button>
+    </div>
+    <div class="card">
+      <h4>Sessão de votação</h4>
+      <p style="font-size:12px;color:#a9b7c4;">Status atual: <b>${sessao.ativa?'EM ANDAMENTO (etapa '+(sessao.indiceCargo+1)+')':'nenhuma votação em andamento'}</b></p>
+      <button class="btn btn-secundario btn-full" onclick="abrirNovaVotacao()">NOVA VOTAÇÃO (limpa sessão atual)</button>
+    </div>
+    <div class="card">
+      <h4>Restaurar candidatos padrão</h4>
+      <p style="font-size:11.5px;color:#8ea3b8;">Restaura a lista original de candidatos de exemplo (sem apagar apuração já registrada). Use com cuidado.</p>
+      <button class="btn btn-laranja btn-full" onclick="restaurarCandidatosPadrao()">Restaurar candidatos padrão</button>
+    </div>
+  `;
+}
+function alternarSom(){
+  config.somAtivado = config.somAtivado===false ? true : false;
+  persistirTudo();
+  if(config.somAtivado) tocarSom('tecla');
+  abrirAbaAdmin('config');
+}
+function alterarSenhaAdmin(){
+  const atual = document.getElementById('senha-atual').value;
+  const nova = document.getElementById('senha-nova').value;
+  if(atual !== config.senhaAdmin){ toast('Senha atual incorreta.'); return; }
+  if(!nova || nova.length<4){ toast('A nova senha deve ter ao menos 4 caracteres.'); return; }
+  config.senhaAdmin = nova;
+  persistirTudo();
+  toast('Senha alterada com sucesso.');
+  abrirAbaAdmin('config');
+}
+function restaurarCandidatosPadrao(){
+  if(!confirm('Isso substituirá a lista atual de candidatos pelos candidatos de exemplo padrão. Continuar?')) return;
+  candidatos = candidatosPadrao();
+  persistirTudo();
+  toast('Candidatos padrão restaurados.');
+  abrirAbaAdmin('candidatos');
+}
+
+function exportarBackup(){
+  const dados = {
+    versao: 1,
+    dataExportacao: new Date().toISOString(),
+    candidatos, config, resultados, sessao
+  };
+  const blob = new Blob([JSON.stringify(dados, null, 2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const agora = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  a.href = url;
+  a.download = 'backup-urna-simulador-' + agora.getFullYear() + pad(agora.getMonth()+1) + pad(agora.getDate()) + '-' + pad(agora.getHours()) + pad(agora.getMinutes()) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=> URL.revokeObjectURL(url), 2000);
+  toast('Backup baixado.');
+}
+
+function importarBackup(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    let dados;
+    try{
+      dados = JSON.parse(e.target.result);
+    }catch(err){
+      toast('Arquivo inválido — não é um backup .json legível.');
+      return;
+    }
+    if(!dados || !dados.candidatos || !dados.config){
+      toast('Este arquivo não parece ser um backup válido deste simulador.');
+      return;
+    }
+    if(!confirm('Isso substituirá TODOS os candidatos, fotos, configurações e resultados atuais pelos dados deste backup. Deseja continuar?')) return;
+    candidatos = dados.candidatos;
+    config = dados.config;
+    resultados = dados.resultados || {};
+    sessao = dados.sessao || { ativa:false, indiceCargo:0, totalVotantes:0, escolhasSenado:[] };
+    if(!sessao.escolhasSenado) sessao.escolhasSenado = [];
+    garantirResultados();
+    const ok = persistirTudo();
+    if(ok) toast('Backup restaurado com sucesso.');
+    input.value = '';
+    abrirAbaAdmin('candidatos');
+  };
+  reader.onerror = function(){ toast('Falha ao ler o arquivo.'); };
+  reader.readAsText(file);
+}
+
+/* ================= INICIALIZAÇÃO ================= */
+window.addEventListener('DOMContentLoaded', ()=>{
+  garantirResultados();
+  // Sessão que ficou "ativa" de um recarregamento/fechamento anterior é
+  // tratada como abandonada — evita continuar a votação de outra pessoa.
+  if(sessao.ativa){
+    sessao.ativa = false;
+    sessao.indiceCargo = 0;
+    sessao.escolhasSenado = [];
+    persistirTudo();
+  }
+  mostrarTela('tela-inicial');
+});
+</script>
+</body>
+</html>
