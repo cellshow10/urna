@@ -386,9 +386,71 @@
     .item-cand .btns{width:100%; justify-content:flex-end; margin-top:4px;}
     .stat-grid{grid-template-columns:1fr;}
   }
+
+  /* AVISO "GIRE O APARELHO" — só em telas de toque (celular/tablet) em pé.
+     Some sozinho quando o aparelho é girado, ou se a pessoa tocar em
+     "Continuar assim mesmo". Nunca aparece em desktop/notebook. */
+  #aviso-girar{display:none;}
+  @media (orientation:portrait) and (max-width:900px) and (pointer:coarse){
+    #aviso-girar{
+      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;
+      position:fixed; inset:0; background:#0d1b2a; color:#fff; z-index:999; text-align:center; padding:24px;
+    }
+    #aviso-girar.ignorado{display:none;}
+    #aviso-girar .rotar-icone{font-size:56px; animation:girar-tela 1.6s ease-in-out infinite;}
+    #aviso-girar p{font-size:16px; line-height:1.6; max-width:300px; color:#dfe6ee;}
+  }
+  @keyframes girar-tela{0%,100%{transform:rotate(0deg);}50%{transform:rotate(90deg);}}
+
+  /* MODO PAISAGEM — reorganiza a tela de votação lado a lado e aumenta
+     textos/alvos de toque, para melhor leitura por idosos em celulares
+     e tablets deitados. */
+  @media (orientation:landscape) and (max-height:560px){
+    body{padding:8px; padding-top:max(8px, env(safe-area-inset-top)); padding-bottom:max(8px, env(safe-area-inset-bottom));}
+    #app{max-width:900px; min-height:auto; padding:10px 16px 16px;}
+    header.topo{margin:8px 4px 8px;}
+    #tela-votacao{
+      display:grid;
+      grid-template-columns:1.1fr 1fr;
+      grid-template-areas:
+        "trilha trilha"
+        "cargo painel"
+        "digitos painel"
+        "msg painel"
+        "teclado painel";
+      gap:6px 18px;
+      align-items:start;
+    }
+    #trilha-cargos{grid-area:trilha;}
+    .cargo-label{grid-area:cargo;}
+    #caixas-digitos{grid-area:digitos;}
+    #msg-numero-errado{grid-area:msg;}
+    #teclado{grid-area:teclado;}
+    #painel-candidato{grid-area:painel; min-height:100%; align-items:flex-start;}
+
+    .cargo-label .nome-cargo{font-size:19px;}
+    .cargo-label .progresso{font-size:12px;}
+    .caixa-digito{width:38px; height:50px; font-size:24px;}
+    .painel-candidato{padding:14px;}
+    .painel-candidato .foto-wrap{width:96px; height:120px;}
+    .painel-candidato .info .num{font-size:28px;}
+    .painel-candidato .info .nome{font-size:19px;}
+    .painel-candidato .info .vice{font-size:14px;}
+    .tecla-num{font-size:22px; padding:12px 0;}
+    .tecla-funcao{font-size:12.5px;}
+    .msg-numero-errado{font-size:15px;}
+
+    #tela-fim .palavra-fim{font-size:60px;}
+  }
 </style>
 </head>
 <body>
+
+<div id="aviso-girar">
+  <div class="rotar-icone">🔄</div>
+  <p>Para uma visualização maior e mais confortável,<br>gire o aparelho na posição horizontal.</p>
+  <button class="btn btn-secundario" onclick="document.getElementById('aviso-girar').classList.add('ignorado')">Continuar assim mesmo</button>
+</div>
 
 <div id="app">
   <header class="topo" id="header-topo" onclick="cliqueSecretoHeader()">
@@ -403,6 +465,7 @@
     <h2>Bem-vindo(a)</h2>
     <p>Este é um simulador educacional de urna eletrônica.<br>Nenhum voto aqui tem validade oficial.</p>
     <button class="btn btn-primario btn-lg btn-full" onclick="iniciarVotacao()">INICIAR VOTAÇÃO</button>
+    <button class="btn-link" onclick="tentarModoHorizontal()">🔄 Girar para horizontal / tela cheia</button>
     <button class="btn-link" onclick="abrirNovaVotacao()">Reiniciar sessão atual</button>
     <button class="btn-link" onclick="acessoViaAtalhoSecreto=false; abrirLoginAdmin();">Área administrativa</button>
   </div>
@@ -635,18 +698,37 @@ let fbDb = null;
 let fbPronto = false;
 let fbAplicandoRemoto = false; // evita eco ao aplicar dados vindos do próprio Firebase
 
+// Status visível no painel admin (aba Configurações), para que uma falha de
+// sincronização NUNCA fique escondida apenas no console do navegador:
+//  'desativado' = firebase-config.js não preenchido (app funciona só local)
+//  'conectando' = credenciais preenchidas, aguardando confirmação de conexão
+//  'ok'         = conectado e sincronizando normalmente
+//  'erro'       = configurado, mas a conexão ou a gravação está falhando
+//                 (ex.: databaseURL errado, regras de segurança bloqueando
+//                 escrita, sem internet) — quando isso acontece, os dados
+//                 continuam salvos SÓ neste navegador, por isso o alerta.
+let fbStatus = 'desativado';
+let fbAvisoErroMostrado = false;
+
 function fbInit(){
   try{
-    if(typeof firebase === 'undefined' || typeof firebaseConfig === 'undefined') return;
-    if(!firebaseConfig.apiKey || firebaseConfig.apiKey.indexOf('SUA_API_KEY') === 0) return; // firebase-config.js ainda não preenchido
+    if(typeof firebase === 'undefined' || typeof firebaseConfig === 'undefined'){ fbStatus='desativado'; return; }
+    if(!firebaseConfig.apiKey || firebaseConfig.apiKey.indexOf('SUA_API_KEY') === 0){ fbStatus='desativado'; return; } // firebase-config.js ainda não preenchido
+    fbStatus = 'conectando';
     firebase.initializeApp(firebaseConfig);
     fbDb = firebase.database();
     fbPronto = true;
+    fbDb.ref('.info/connected').on('value', snap=>{
+      fbStatus = snap.val()===true ? 'ok' : 'conectando';
+      fbAtualizarIndicador();
+    });
     fbEscutarRemoto();
   }catch(e){
     console.error('Firebase indisponível — o simulador seguirá funcionando apenas com armazenamento local.', e);
     fbPronto = false;
+    fbStatus = 'erro';
   }
+  fbAtualizarIndicador();
 }
 function fbRef(caminho){
   return fbDb.ref('urnas/' + (typeof URNA_ID!=='undefined' && URNA_ID ? URNA_ID : 'padrao') + '/' + caminho);
@@ -654,6 +736,18 @@ function fbRef(caminho){
 function fbTelaAdminAberta(){
   const el = document.getElementById('tela-admin');
   return !!(el && !el.classList.contains('hidden'));
+}
+function fbAtualizarIndicador(){
+  if(fbTelaAdminAberta() && abaAtual==='config') abrirAbaAdmin('config');
+}
+function fbAvisarFalhaSync(){
+  fbStatus = 'erro';
+  if(!fbAvisoErroMostrado){
+    fbAvisoErroMostrado = true;
+    toast('⚠️ Falha ao sincronizar com o Firebase — os dados estão salvos só neste navegador.');
+    setTimeout(()=>{ fbAvisoErroMostrado = false; }, 15000);
+  }
+  fbAtualizarIndicador();
 }
 function fbEscutarRemoto(){
   fbRef('candidatos').on('value', snap=>{
@@ -693,26 +787,32 @@ function fbEscutarRemoto(){
 }
 function fbEnviarCandidatos(){
   if(!fbPronto || fbAplicandoRemoto) return;
-  fbRef('candidatos').set(candidatos).catch(e=>console.error('Falha ao sincronizar candidatos com o Firebase:', e));
+  fbRef('candidatos').set(candidatos)
+    .then(()=>{ fbStatus='ok'; })
+    .catch(e=>{ console.error('Falha ao sincronizar candidatos com o Firebase:', e); fbAvisarFalhaSync(); });
 }
 function fbEnviarConfig(){
   if(!fbPronto || fbAplicandoRemoto) return;
-  fbRef('config').set(config).catch(e=>console.error('Falha ao sincronizar configurações com o Firebase:', e));
+  fbRef('config').set(config)
+    .then(()=>{ fbStatus='ok'; })
+    .catch(e=>{ console.error('Falha ao sincronizar configurações com o Firebase:', e); fbAvisarFalhaSync(); });
 }
 function fbIncrementarVoto(cargoId, chave){
   if(!fbPronto) return;
   fbRef('resultados/'+cargoId+'/'+chave).set(firebase.database.ServerValue.increment(1))
-    .catch(e=>console.error('Falha ao sincronizar voto com o Firebase:', e));
+    .then(()=>{ fbStatus='ok'; })
+    .catch(e=>{ console.error('Falha ao sincronizar voto com o Firebase:', e); fbAvisarFalhaSync(); });
 }
 function fbIncrementarVotante(){
   if(!fbPronto) return;
   fbRef('totalVotantes').set(firebase.database.ServerValue.increment(1))
-    .catch(e=>console.error('Falha ao sincronizar total de votantes com o Firebase:', e));
+    .then(()=>{ fbStatus='ok'; })
+    .catch(e=>{ console.error('Falha ao sincronizar total de votantes com o Firebase:', e); fbAvisarFalhaSync(); });
 }
 function fbZerarApuracaoRemota(){
   if(!fbPronto) return;
-  fbRef('resultados').remove().catch(e=>console.error('Falha ao zerar apuração no Firebase:', e));
-  fbRef('totalVotantes').set(0).catch(e=>console.error('Falha ao zerar total de votantes no Firebase:', e));
+  fbRef('resultados').remove().catch(e=>{ console.error('Falha ao zerar apuração no Firebase:', e); fbAvisarFalhaSync(); });
+  fbRef('totalVotantes').set(0).catch(e=>{ console.error('Falha ao zerar total de votantes no Firebase:', e); fbAvisarFalhaSync(); });
 }
 fbInit();
 
@@ -726,11 +826,40 @@ function voltarInicio(){
   mostrarTela('tela-inicial');
 }
 
+/* ================= TELA CHEIA / TRAVAR EM HORIZONTAL =================
+   Nem todo navegador permite forçar a orientação da tela via código —
+   Android/Chrome só permite depois de entrar em tela cheia, e o Safari do
+   iPhone/iPad não permite de jeito nenhum (limitação do próprio iOS, não
+   do simulador). Por isso o aviso "gire o aparelho" em CSS continua
+   sendo o principal recurso — esta função só melhora a experiência nos
+   aparelhos Android/Chrome que suportam o travamento automático. */
+function tentarModoHorizontal(){
+  const el = document.documentElement;
+  const pedirTelaCheia = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+  function travarHorizontal(){
+    try{
+      if(screen.orientation && screen.orientation.lock){
+        screen.orientation.lock('landscape').catch(()=>{});
+      }
+    }catch(e){ /* navegador não suporta — segue só com o aviso em CSS */ }
+  }
+  if(pedirTelaCheia){
+    try{
+      const resultado = pedirTelaCheia.call(el);
+      if(resultado && resultado.then) resultado.then(travarHorizontal).catch(travarHorizontal);
+      else travarHorizontal();
+    }catch(e){ travarHorizontal(); }
+  } else {
+    travarHorizontal();
+  }
+}
+
 /* ================= FLUXO DE VOTAÇÃO ================= */
 let digitosAtuais = '';
 let candidatoEncontrado = null;
 
 function iniciarVotacao(){
+  tentarModoHorizontal();
   if(sessao.ativa){
     // sessão em andamento — retoma no cargo atual
   } else {
@@ -1550,7 +1679,18 @@ function zerarApuracao(){
 /* ---------- ABA CONFIGURAÇÕES ---------- */
 function renderAbaConfig(){
   const somLigado = config.somAtivado !== false;
+  const statusInfo = {
+    desativado: { cor:'#8ea3b8', texto:'⚪ Sincronização com Firebase não configurada — candidatos, fotos e resultados ficam salvos SÓ neste navegador (somem ao limpar o cache ou trocar de navegador/dispositivo). Preencha firebase-config.js para ativar.' },
+    conectando: { cor:'#e08e0b', texto:'🟡 Conectando ao Firebase...' },
+    ok:         { cor:'#1e8449', texto:'🟢 Sincronizado com o Firebase — candidatos, fotos e resultados também estão salvos na nuvem.' },
+    erro:       { cor:'#c0392b', texto:'🔴 Falha na sincronização com o Firebase — verifique databaseURL/regras de segurança no firebase-config.js e no Console do Firebase. Os dados estão salvos SÓ neste navegador até isso ser corrigido.' }
+  }[fbStatus] || statusInfo_desconhecido();
+  function statusInfo_desconhecido(){ return { cor:'#8ea3b8', texto:'⚪ Sincronização com Firebase não configurada.' }; }
   return `
+    <div class="card">
+      <h4>☁️ Status de sincronização</h4>
+      <p style="font-size:11.5px;color:${statusInfo.cor};line-height:1.5;">${statusInfo.texto}</p>
+    </div>
     <div class="card">
       <h4>💾 Backup de candidatos, fotos e configurações</h4>
       <p style="font-size:11.5px;color:#8ea3b8;">Baixa um arquivo .json com tudo (inclusive as fotos). Guarde esse arquivo — ele permite restaurar os candidatos em qualquer navegador ou dispositivo, mesmo se o armazenamento deste navegador for apagado.</p>
