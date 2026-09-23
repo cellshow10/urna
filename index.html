@@ -150,6 +150,11 @@
   .btn-perigo{background:var(--vermelho);}
   .btn-laranja{background:var(--laranja); color:#241a00;}
   .btn-link{background:none; border:none; color:#7fa9d4; font-size:12px; text-decoration:underline; cursor:pointer; padding:6px; touch-action:manipulation;}
+  .btn-contorno{
+    background:rgba(255,255,255,.05); color:#eef2f6; border:1.5px solid rgba(255,255,255,.25);
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .btn-contorno:active{background:rgba(255,255,255,.12);}
   .btn-full{width:100%;}
   .btn-lg{padding:18px; font-size:17px;}
 
@@ -556,8 +561,8 @@
     <h2>Bem-vindo(a)</h2>
     <p>Este é um simulador educacional de urna eletrônica.<br>Nenhum voto aqui tem validade oficial.</p>
     <button class="btn btn-primario btn-lg btn-full" onclick="iniciarVotacao()">INICIAR VOTAÇÃO</button>
-    <button class="btn-link" onclick="tentarModoHorizontal()">🔄 Girar para horizontal / tela cheia</button>
-    <p id="dica-ios-tela-cheia" class="hidden" style="font-size:10.5px;color:#8a94a0;max-width:280px;">📲 iPhone/iPad: pra esconder TODOS os menus do Safari, toque em Compartilhar → "Adicionar à Tela de Início" e abra o simulador pelo ícone.</p>
+    <button class="btn btn-contorno btn-full" onclick="tentarModoHorizontal()" style="margin-top:10px;">⛶ Tela cheia</button>
+    <p id="dica-ios-tela-cheia" class="hidden" style="font-size:10.5px;color:#8a94a0;max-width:280px;margin-top:8px;">📲 iPhone/iPad: pra esconder TODOS os menus do Safari, toque em Compartilhar → "Adicionar à Tela de Início" e abra o simulador pelo ícone.</p>
     <button class="btn-link" onclick="abrirNovaVotacao()">Reiniciar sessão atual</button>
     <button class="btn-link" onclick="acessoViaAtalhoSecreto=false; abrirLoginAdmin();">Área administrativa</button>
   </div>
