@@ -216,6 +216,7 @@
     gap:12px;
     align-items:center;
     flex-shrink:0;
+    overflow:hidden; /* nunca deixa nada vazar pra fora da caixa cinza */
   }
   .painel-candidato.oculto{visibility:hidden;}
   .painel-candidato .foto-wrap{
@@ -224,10 +225,10 @@
   }
   .painel-candidato .foto-wrap img{width:100%;height:100%;object-fit:cover;}
   .painel-candidato .foto-wrap.sem-foto{font-size:9px;color:#5c7d68;text-align:center;padding:4px;}
-  .painel-candidato .info{flex:1; min-width:0;}
-  .painel-candidato .info .num{font-size:21px; font-weight:800; color:#fff; font-family:"Consolas",monospace;}
-  .painel-candidato .info .nome{font-size:14.5px; font-weight:700; margin-top:2px; color:var(--tela-texto);}
-  .painel-candidato .info .vice{font-size:11px; color:#9fc2ac; margin-top:5px;}
+  .painel-candidato .info{flex:1; min-width:0; overflow:hidden;}
+  .painel-candidato .info .num{font-size:21px; font-weight:800; color:#fff; font-family:"Consolas",monospace; overflow-wrap:anywhere; line-height:1.15;}
+  .painel-candidato .info .nome{font-size:14.5px; font-weight:700; margin-top:2px; color:var(--tela-texto); overflow-wrap:break-word; line-height:1.25;}
+  .painel-candidato .info .vice{font-size:11px; color:#9fc2ac; margin-top:5px; overflow-wrap:break-word; line-height:1.3;}
   .painel-candidato .info .vice b{color:#dfe6ee;}
 
   /* teclado físico — layout igual ao modelo real */
@@ -476,7 +477,7 @@
     #painel-candidato{grid-area:painel; align-self:start; margin:0 16px 0 14px; background:rgba(255,255,255,.55); border-color:#b7b6ae; padding:14px;}
     .painel-candidato .foto-wrap{background:#e7e6e1; border-color:#b7b6ae; width:108px; height:134px;}
     .painel-candidato .foto-wrap.sem-foto{color:#8c8b85;}
-    .painel-candidato .info .num{color:#1c1c1c; font-size:28px;}
+    .painel-candidato .info .num{color:#1c1c1c; font-size:25px;}
     .painel-candidato .info .nome{color:#1c1c1c; font-size:19px;}
     .painel-candidato .info .vice{color:#4c6a58; font-size:14px;}
     .painel-candidato .info .vice b{color:#1c1c1c;}
