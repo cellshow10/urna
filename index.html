@@ -236,14 +236,17 @@
   .painel-candidato .info .vice{font-size:11px; color:#9fc2ac; margin-top:5px; overflow-wrap:break-word; line-height:1.3;}
   .painel-candidato .info .vice b{color:#dfe6ee;}
 
-  /* teclado físico — layout igual ao modelo real */
+  /* teclado físico — cresce para ocupar todo o espaço vertical
+     disponível na tela (em vez de ficar do tamanho do texto/padding). */
   .teclado-fisico{
     display:grid;
     grid-template-columns:repeat(3,1fr);
+    grid-template-rows:repeat(5,1fr);
     gap:7px;
     padding:0 2px;
     margin-top:4px;
-    flex-shrink:0;
+    flex:1;
+    min-height:0;
   }
   .teclado-fisico > :nth-child(10){grid-column:2;}
   .teclado-fisico > :nth-child(11){grid-row:5; grid-column:1;}
@@ -254,9 +257,14 @@
     color:#fff;
     border:none;
     border-radius:9px;
-    font-size:21px;
+    font-size:26px;
     font-weight:800;
-    padding:14px 0;
+    padding:0;
+    width:100%;
+    height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
     cursor:pointer;
     position:relative;
     box-shadow:0 3px 0 rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.08);
@@ -270,9 +278,11 @@
     border-radius:9px;
     cursor:pointer;
     font-weight:800;
-    font-size:10.5px;
+    font-size:12px;
     letter-spacing:.4px;
-    padding:6px 2px;
+    padding:4px 2px;
+    width:100%;
+    height:100%;
     display:flex;
     flex-direction:column;
     align-items:center;
@@ -495,8 +505,8 @@
       background:#22262a;
       border-radius:0;
     }
-    .tecla-num{font-size:22px; padding:12px 0;}
-    .tecla-funcao{font-size:12.5px;}
+    .tecla-num{font-size:26px;}
+    .tecla-funcao{font-size:13px;}
   }
 
   /* Telas baixas em paisagem (celulares antigos, modo tela cheia com
@@ -512,8 +522,8 @@
     .painel-candidato .info .num{font-size:19px !important;}
     .painel-candidato .info .nome{font-size:14px !important;}
     .painel-candidato .info .vice{font-size:11px !important;}
-    .tecla-num{font-size:16px !important; padding:7px 0 !important; border-radius:7px;}
-    .tecla-funcao{font-size:9.5px !important; gap:3px;}
+    .tecla-num{font-size:19px !important; border-radius:7px;}
+    .tecla-funcao{font-size:10.5px !important; gap:3px;}
     .msg-numero-errado{font-size:12px !important; min-height:12px;}
     .crumb{font-size:8px !important; padding:3px 6px !important;}
     #teclado{padding:8px 10px !important; gap:5px !important;}
