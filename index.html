@@ -17,8 +17,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Urna Treino">
-<link rel="apple-touch-icon" href="icons/icon-192.png">
-<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="icon" href="./icon-192.png">
 
 <style>
   :root{
@@ -48,20 +48,20 @@
     background:#0d1b2a;
     color:var(--texto);
     height:100vh;
-    height:100dvh;
+    height:-webkit-fill-available;
+    height:100dvh; /* acompanha a barra do navegador sumindo/aparecendo */
     display:flex;
     align-items:stretch;
     justify-content:stretch;
     padding:0;
     overflow:hidden;
     overscroll-behavior:none;
+    touch-action:manipulation; /* mata o zoom por duplo-toque SEM quebrar cliques */
+    -webkit-text-size-adjust:100%;
   }
-  /* CARCAÇA (case plástico simulando o equipamento físico) — sempre
-     ocupa 100% da tela disponível, em qualquer aparelho/navegador/
-     orientação, com ou sem tela cheia ativada. */
+  /* CARCAÇA — sempre ocupa 100% da tela, com ou sem tela cheia. */
   #app{
     width:100%;
-    max-width:none;
     background:linear-gradient(180deg,var(--plastico),var(--plastico-sombra) 96%);
     border-radius:0;
     padding:10px 14px 14px;
@@ -73,9 +73,8 @@
     display:flex;
     flex-direction:column;
     height:100%;
-    min-height:100%;
-    max-height:100%;
-    overflow-y:auto;
+    min-height:0;
+    overflow:hidden;
     position:relative;
     border:none;
   }
@@ -84,6 +83,7 @@
     text-align:center;
     padding-bottom:8px;
     border-bottom:1px solid #a8a59a;
+    cursor:pointer;
   }
   header.topo .titulo{
     font-size:13.5px;
@@ -111,6 +111,7 @@
   /* TELA (visor LCD embutido na carcaça) */
   .tela{
     flex:1;
+    min-height:0;
     display:flex;
     flex-direction:column;
     padding:14px 12px;
@@ -121,12 +122,13 @@
     box-shadow:inset 0 0 0 3px #05100a, inset 0 0 18px rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.4);
     color:var(--tela-texto);
     position:relative;
+    overflow:hidden;
   }
   @keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
   .hidden{display:none !important;}
 
   /* TELA INICIAL */
-  #tela-inicial{align-items:center; justify-content:center; text-align:center; gap:14px;}
+  #tela-inicial{align-items:center; justify-content:center; text-align:center; gap:14px; overflow-y:auto;}
   #tela-inicial .icone-urna{font-size:64px;}
   #tela-inicial h2{margin:0; font-size:18px;}
   #tela-inicial p{margin:0; color:#b7c3d0; font-size:13px; line-height:1.5;}
@@ -139,6 +141,7 @@
     cursor:pointer;
     transition:transform .05s ease, filter .15s ease;
     color:#fff;
+    touch-action:manipulation;
   }
   .btn:active{transform:scale(.97);}
   .btn-primario{background:var(--verde); box-shadow:0 4px 0 var(--verde-escuro);}
@@ -146,7 +149,7 @@
   .btn-secundario{background:#3a4048; color:#dfe6ee;}
   .btn-perigo{background:var(--vermelho);}
   .btn-laranja{background:var(--laranja); color:#241a00;}
-  .btn-link{background:none; border:none; color:#7fa9d4; font-size:12px; text-decoration:underline; cursor:pointer; padding:6px;}
+  .btn-link{background:none; border:none; color:#7fa9d4; font-size:12px; text-decoration:underline; cursor:pointer; padding:6px; touch-action:manipulation;}
   .btn-full{width:100%;}
   .btn-lg{padding:18px; font-size:17px;}
 
@@ -161,6 +164,7 @@
     padding-bottom:7px; margin-bottom:2px;
     border-bottom:1px dashed #2c4232;
     -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
   }
   .trilha-cargos::-webkit-scrollbar{height:3px;}
   .trilha-cargos::-webkit-scrollbar-thumb{background:#2c4232;}
@@ -171,11 +175,11 @@
   }
   .crumb.feito{color:#8fb89e;}
   .crumb.atual{background:var(--amarelo); color:#1b1b1b;}
-  .crumb-seta{color:#2c4232; font-size:9px; flex-shrink:0;}
 
   .cargo-label{
     text-align:center;
     padding-bottom:4px;
+    flex-shrink:0;
   }
   .cargo-label .nome-cargo{font-size:14.5px; font-weight:800; color:var(--tela-texto); letter-spacing:.5px;}
   .cargo-label .progresso{font-size:10px; color:#7fa88a; margin-top:2px;}
@@ -183,6 +187,7 @@
   .caixas-digitos{
     display:flex; gap:6px; justify-content:center; flex-wrap:wrap;
     padding:4px 0;
+    flex-shrink:0;
   }
   .caixa-digito{
     width:32px; height:42px;
@@ -198,6 +203,7 @@
   .msg-numero-errado{
     text-align:center; color:#ff9d8a; font-weight:800; font-size:13px;
     letter-spacing:.5px; min-height:16px;
+    flex-shrink:0;
   }
 
   .painel-candidato{
@@ -209,6 +215,7 @@
     display:flex;
     gap:10px;
     align-items:center;
+    flex-shrink:0;
   }
   .painel-candidato.oculto{visibility:hidden;}
   .painel-candidato .foto-wrap{
@@ -217,20 +224,20 @@
   }
   .painel-candidato .foto-wrap img{width:100%;height:100%;object-fit:cover;}
   .painel-candidato .foto-wrap.sem-foto{font-size:9px;color:#5c7d68;text-align:center;padding:4px;}
-  .painel-candidato .info{flex:1;}
+  .painel-candidato .info{flex:1; min-width:0;}
   .painel-candidato .info .num{font-size:21px; font-weight:800; color:#fff; font-family:"Consolas",monospace;}
   .painel-candidato .info .nome{font-size:14.5px; font-weight:700; margin-top:2px; color:var(--tela-texto);}
   .painel-candidato .info .vice{font-size:11px; color:#9fc2ac; margin-top:5px;}
   .painel-candidato .info .vice b{color:#dfe6ee;}
 
-  /* teclado físico — layout igual ao modelo real: grade 1-9 (3 colunas),
-     0 sozinho centralizado, e BRANCO / CORRIGE / CONFIRMA numa fileira. */
+  /* teclado físico — layout igual ao modelo real */
   .teclado-fisico{
     display:grid;
     grid-template-columns:repeat(3,1fr);
     gap:7px;
     padding:0 2px;
     margin-top:4px;
+    flex-shrink:0;
   }
   .teclado-fisico > :nth-child(10){grid-column:2;}
   .teclado-fisico > :nth-child(11){grid-row:5; grid-column:1;}
@@ -247,6 +254,7 @@
     cursor:pointer;
     position:relative;
     box-shadow:0 3px 0 rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.08);
+    touch-action:manipulation;
   }
   .tecla-num:active{transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.35);}
   .tecla-num .pontos-braille{position:absolute; right:6px; bottom:6px;}
@@ -265,14 +273,13 @@
     justify-content:center;
     gap:5px;
     box-shadow:0 3px 0 rgba(0,0,0,.3);
+    touch-action:manipulation;
   }
   .tecla-funcao:active{transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.3);}
   .tecla-branco{background:#efece3; color:#1c1c1c; border:1px solid #cfcabc;}
   .tecla-corrige{background:#e8710d; color:#241400;}
   .tecla-confirma{background:#57964f; color:#0c1f0b;}
   .tecla-confirma:disabled{background:#7c8a80; color:#3a3f37; cursor:not-allowed; box-shadow:0 3px 0 rgba(0,0,0,.2);}
-
-  .tecla-vazia{visibility:hidden;}
 
   .pontos-braille{
     display:grid;
@@ -313,6 +320,7 @@
     display:flex; align-items:center; justify-content:space-between;
     background:#000; color:#fff; padding:6px 9px; font-size:9.5px; font-weight:700;
     letter-spacing:.3px;
+    flex-shrink:0;
   }
   .fim-topo .fim-treino{color:#9a9a9a; font-size:9.5px; letter-spacing:.5px;}
   .fim-topo .bateria{display:flex; align-items:center; gap:2px;}
@@ -323,31 +331,33 @@
   .fim-topo .bateria .ponta{width:2px; height:5px; background:#fff; border-radius:0 2px 2px 0;}
   .fim-meio{
     flex:1; display:flex; align-items:center; justify-content:center;
-    min-height:200px; position:relative;
+    min-height:0; position:relative;
   }
-  .fim-meio .palavra-fim{font-size:76px; font-weight:800; letter-spacing:4px; color:#000; font-family:Arial, Helvetica, sans-serif;}
+  .fim-meio .palavra-fim{font-size:clamp(40px, 18vh, 76px); font-weight:800; letter-spacing:4px; color:#000; font-family:Arial, Helvetica, sans-serif;}
   .fim-votou{
-    position:absolute; right:12px; bottom:34px;
-    font-size:22px; font-weight:700; color:#c9c9c9; letter-spacing:1px;
+    position:absolute; right:12px; bottom:12px;
+    font-size:clamp(14px, 5vh, 22px); font-weight:700; color:#c9c9c9; letter-spacing:1px;
   }
   .fim-rodape{
     background:#0a1622; color:#dfe6ee; font-size:9px; padding:5px 9px;
     display:flex; justify-content:center; gap:14px; flex-wrap:wrap;
+    flex-shrink:0;
   }
 
   /* ADMIN */
   .admin-header{
     display:flex; align-items:center; justify-content:space-between;
     background:var(--azul-escuro); padding:12px 14px; border-bottom:3px solid var(--amarelo);
+    flex-shrink:0;
   }
   .admin-header h2{font-size:15px; margin:0;}
-  .tabs{display:flex; gap:4px; padding:8px 10px 0; flex-wrap:wrap; background:#1b1f26;}
+  .tabs{display:flex; gap:4px; padding:8px 10px 0; flex-wrap:wrap; background:#1b1f26; flex-shrink:0;}
   .tab-btn{
     background:#2b2f36; color:#b7c3d0; border:none; padding:8px 10px; border-radius:8px 8px 0 0;
-    font-size:11.5px; font-weight:700; cursor:pointer;
+    font-size:11.5px; font-weight:700; cursor:pointer; touch-action:manipulation;
   }
   .tab-btn.ativo{background:var(--cinza-urna); color:var(--amarelo);}
-  .tab-conteudo{padding:14px; overflow-y:auto; max-height:70vh;}
+  .tab-conteudo{padding:14px; overflow-y:auto; flex:1; min-height:0; touch-action:pan-y; -webkit-overflow-scrolling:touch;}
   .card{
     background:#1b1f26; border:1px solid #2d3239; border-radius:10px; padding:12px; margin-bottom:12px;
   }
@@ -364,12 +374,12 @@
     display:flex; gap:10px; align-items:center; background:#0f1319; border:1px solid #2d3239; border-radius:8px; padding:8px;
   }
   .item-cand .mini-foto{width:40px;height:50px;border-radius:4px;object-fit:cover;background:#232a33; flex-shrink:0;}
-  .item-cand .dados{flex:1; font-size:12px;}
+  .item-cand .dados{flex:1; font-size:12px; min-width:0;}
   .item-cand .dados .n{color:var(--amarelo); font-weight:800;}
   .item-cand .dados .inativo-tag{color:#e08e0b; font-size:10px; font-weight:700;}
   .item-cand .btns{display:flex; gap:5px;}
   .item-cand .btns button{
-    border:none; border-radius:6px; padding:6px 8px; font-size:10.5px; cursor:pointer; color:#fff;
+    border:none; border-radius:6px; padding:6px 8px; font-size:10.5px; cursor:pointer; color:#fff; touch-action:manipulation;
   }
   .tabela-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch;}
   table.resultados{width:100%; min-width:420px; border-collapse:collapse; font-size:12px; margin-top:6px;}
@@ -383,13 +393,14 @@
   .stat-box .l{font-size:10px; color:#8ea3b8; margin-top:2px;}
   .ordem-item{display:flex; align-items:center; gap:8px; background:#0f1319; border:1px solid #2d3239; border-radius:8px; padding:8px 10px; margin-bottom:6px;}
   .ordem-item .nome-c{flex:1; font-size:12.5px; font-weight:700;}
-  .ordem-item .setas button{background:#3a4048; border:none; color:#fff; border-radius:5px; padding:5px 8px; cursor:pointer; font-size:11px;}
+  .ordem-item .setas button{background:#3a4048; border:none; color:#fff; border-radius:5px; padding:5px 8px; cursor:pointer; font-size:11px; touch-action:manipulation;}
   .msg-toast{
     position:fixed; bottom:18px; left:50%; transform:translateX(-50%);
     background:var(--verde-escuro); color:#fff; padding:10px 18px; border-radius:8px; font-size:12.5px; z-index:200;
     box-shadow:0 6px 20px rgba(0,0,0,.4);
+    max-width:90vw; text-align:center;
   }
-  .rodape-admin{padding:10px 14px; text-align:center; border-top:1px solid #2d3239;}
+  .rodape-admin{padding:10px 14px; text-align:center; border-top:1px solid #2d3239; flex-shrink:0;}
   ::-webkit-scrollbar{width:7px;}
   ::-webkit-scrollbar-thumb{background:#3a4048; border-radius:4px;}
 
@@ -402,9 +413,7 @@
     .stat-grid{grid-template-columns:1fr;}
   }
 
-  /* AVISO "GIRE O APARELHO" — só em telas de toque (celular/tablet) em pé.
-     Some sozinho quando o aparelho é girado, ou se a pessoa tocar em
-     "Continuar assim mesmo". Nunca aparece em desktop/notebook. */
+  /* AVISO "GIRE O APARELHO" — só em telas de toque em pé. */
   #aviso-girar{display:none;}
   @media (orientation:portrait) and (max-width:900px) and (pointer:coarse){
     #aviso-girar{
@@ -417,13 +426,21 @@
   }
   @keyframes girar-tela{0%,100%{transform:rotate(0deg);}50%{transform:rotate(90deg);}}
 
-  /* MODO PAISAGEM — em celular/tablet deitado, reorganiza lado a lado
-     (igual à urna real) e aumenta textos para melhor leitura por idosos.
-     A tela já ocupa 100% por padrão em qualquer orientação/aparelho. */
+  /* MODO PAISAGEM — lado a lado (igual à urna real) + cabeçalho compacto
+     para aproveitar ao máximo a tela. O atalho secreto do admin (5 toques)
+     continua funcionando na faixa fina do cabeçalho. */
   @media (orientation:landscape) and (pointer:coarse){
-    header.topo{margin:4px 4px 8px;}
-    /* Igual à urna real: visor CINZA CLARO com foto/número/dígitos na
-       ESQUERDA, painel PRETO com o teclado físico na DIREITA. */
+    #app{padding-top:max(4px, env(safe-area-inset-top)); padding-bottom:max(4px, env(safe-area-inset-bottom));}
+    header.topo{
+      margin:0 4px 4px; padding:2px 0 3px;
+      border-bottom:1px solid #a8a59a;
+      display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:nowrap;
+    }
+    header.topo .titulo{font-size:8.5px; letter-spacing:.6px; white-space:nowrap;}
+    header.topo .subtitulo{margin:0; font-size:7px; padding:1px 6px; letter-spacing:1px; white-space:nowrap;}
+    header.topo .aviso{display:none;}
+    /* Igual à urna real: visor CLARO na ESQUERDA, painel PRETO com o
+       teclado físico na DIREITA. */
     #tela-votacao{
       display:grid;
       grid-template-columns:1fr 1.05fr;
@@ -450,18 +467,18 @@
     .crumb{background:rgba(0,0,0,.05); color:#8c8b85;}
     .crumb.feito{color:#4c6a58;}
     .cargo-label{grid-area:cargo; padding-right:16px; padding-left:14px; text-align:left;}
-    .cargo-label .nome-cargo{color:#1c1c1c;}
-    .cargo-label .progresso{color:#6b6a63;}
+    .cargo-label .nome-cargo{color:#1c1c1c; font-size:19px;}
+    .cargo-label .progresso{color:#6b6a63; font-size:12px;}
     #caixas-digitos{grid-area:digitos; padding-right:16px; padding-left:14px; justify-content:flex-start;}
-    .caixa-digito{background:#fff; border-color:#9a998f; color:#1c1c1c;}
+    .caixa-digito{background:#fff; border-color:#9a998f; color:#1c1c1c; width:38px; height:50px; font-size:24px;}
     .caixa-digito.vazia{border-color:#b7b6ae; color:transparent;}
-    #msg-numero-errado{grid-area:msg; padding-right:16px; padding-left:14px; text-align:left; color:#b3261e;}
-    #painel-candidato{grid-area:painel; align-self:start; margin:0 16px 0 14px; background:rgba(255,255,255,.55); border-color:#b7b6ae;}
-    .painel-candidato .foto-wrap{background:#e7e6e1; border-color:#b7b6ae;}
+    #msg-numero-errado{grid-area:msg; padding-right:16px; padding-left:14px; text-align:left; color:#b3261e; font-size:15px;}
+    #painel-candidato{grid-area:painel; align-self:start; margin:0 16px 0 14px; background:rgba(255,255,255,.55); border-color:#b7b6ae; padding:14px;}
+    .painel-candidato .foto-wrap{background:#e7e6e1; border-color:#b7b6ae; width:96px; height:120px;}
     .painel-candidato .foto-wrap.sem-foto{color:#8c8b85;}
-    .painel-candidato .info .num{color:#1c1c1c;}
-    .painel-candidato .info .nome{color:#1c1c1c;}
-    .painel-candidato .info .vice{color:#4c6a58;}
+    .painel-candidato .info .num{color:#1c1c1c; font-size:28px;}
+    .painel-candidato .info .nome{color:#1c1c1c; font-size:19px;}
+    .painel-candidato .info .vice{color:#4c6a58; font-size:14px;}
     .painel-candidato .info .vice b{color:#1c1c1c;}
     #teclado{
       grid-area:teclado;
@@ -472,34 +489,47 @@
       background:#22262a;
       border-radius:0;
     }
-
-    .cargo-label .nome-cargo{font-size:19px;}
-    .cargo-label .progresso{font-size:12px;}
-    .caixa-digito{width:38px; height:50px; font-size:24px;}
-    .painel-candidato{padding:14px;}
-    .painel-candidato .foto-wrap{width:96px; height:120px;}
-    .painel-candidato .info .num{font-size:28px;}
-    .painel-candidato .info .nome{font-size:19px;}
-    .painel-candidato .info .vice{font-size:14px;}
     .tecla-num{font-size:22px; padding:12px 0;}
     .tecla-funcao{font-size:12.5px;}
-    .msg-numero-errado{font-size:15px;}
-
-    #tela-fim .palavra-fim{font-size:60px;}
-    .tab-conteudo{max-height:none; flex:1; overflow-y:auto;}
   }
 
-  /* MODO QUIOSQUE — durante o uso, bloqueia rolagem/zoom por gesto; só o
-     toque nos botões funciona. Formulários do admin continuam roláveis
-     normalmente (precisam disso para cadastrar candidatos). */
-  html, body{overscroll-behavior:none;}
+  /* Telas baixas em paisagem (celulares antigos, modo tela cheia com
+     pouca altura): encolhe tudo proporcionalmente para nunca transbordar. */
+  @media (orientation:landscape) and (max-height:540px){
+    header.topo{margin-bottom:2px; padding-bottom:2px;}
+    .rotulo-treinamento{font-size:8px !important; padding-top:0 !important;}
+    .cargo-label .nome-cargo{font-size:15px !important;}
+    .cargo-label .progresso{font-size:10px !important;}
+    .caixa-digito{width:28px !important; height:36px !important; font-size:17px !important;}
+    .painel-candidato{padding:8px !important; min-height:0;}
+    .painel-candidato .foto-wrap{width:64px !important; height:80px !important;}
+    .painel-candidato .info .num{font-size:19px !important;}
+    .painel-candidato .info .nome{font-size:14px !important;}
+    .painel-candidato .info .vice{font-size:11px !important;}
+    .tecla-num{font-size:16px !important; padding:7px 0 !important; border-radius:7px;}
+    .tecla-funcao{font-size:9.5px !important; gap:3px;}
+    .msg-numero-errado{font-size:12px !important; min-height:12px;}
+    .crumb{font-size:8px !important; padding:3px 6px !important;}
+    #teclado{padding:8px 10px !important; gap:5px !important;}
+    .fim-meio .palavra-fim{font-size:clamp(32px, 16vh, 48px) !important;}
+  }
+
+  /* MODO QUIOSQUE — bloqueia pinça/zoom por gesto nas áreas de votação;
+     formulários do admin continuam roláveis/digitáveis normalmente. */
+  html{overscroll-behavior:none;}
   #tela-inicial, #tela-votacao, #tela-fim, #teclado, .painel-candidato{
     touch-action:none;
     -webkit-touch-callout:none;
     -webkit-user-select:none;
     user-select:none;
   }
-  .tab-conteudo{touch-action:pan-y;}
+  #tela-inicial{touch-action:pan-y;}
+
+  /* Quando aberto como app instalado ou em tela cheia, garante cor na
+     barra de status/notch. */
+  @media (display-mode: fullscreen), (display-mode: standalone){
+    body{background:#0d1b2a;}
+  }
 </style>
 </head>
 <body>
@@ -512,8 +542,10 @@
 
 <div id="app">
   <header class="topo" id="header-topo" onclick="cliqueSecretoHeader()">
-    <div class="titulo">SIMULADOR DE URNA ELETRÔNICA</div>
-    <div class="subtitulo">PROJETO EDUCACIONAL</div>
+    <div>
+      <span class="titulo">SIMULADOR DE URNA ELETRÔNICA</span>
+      <span class="subtitulo">PROJETO EDUCACIONAL</span>
+    </div>
     <div class="aviso">Simulação sem qualquer vínculo com a Justiça Eleitoral ou o TSE.</div>
   </header>
 
@@ -571,7 +603,7 @@
   </div>
 
   <!-- LOGIN ADMIN -->
-  <div id="tela-admin-login" class="tela hidden" style="align-items:center; justify-content:center; text-align:center; gap:12px;">
+  <div id="tela-admin-login" class="tela hidden" style="align-items:center; justify-content:center; text-align:center; gap:12px; touch-action:pan-y; user-select:text; -webkit-user-select:text;">
     <div style="font-size:40px;">🔒</div>
     <h2 style="margin:0; font-size:16px;">Área Administrativa</h2>
     <input type="password" id="input-senha-admin" placeholder="Senha" style="max-width:220px;">
@@ -584,7 +616,7 @@
   </div>
 
   <!-- PAINEL ADMIN -->
-  <div id="tela-admin" class="tela hidden" style="padding:0;">
+  <div id="tela-admin" class="tela hidden" style="padding:0; touch-action:pan-y; -webkit-user-select:text; user-select:text;">
     <div class="admin-header">
       <h2>Painel Administrativo</h2>
       <button class="btn-link" onclick="sairAdmin()">Sair</button>
@@ -608,11 +640,6 @@
 /* ======================================================================
    SIMULADOR DE URNA ELETRÔNICA — PROJETO EDUCACIONAL
    WF Tecnology
-   Estrutura de dados centralizada (candidatos, ordem, configurações)
-   persistida em localStorage, com sincronização opcional via Firebase
-   Realtime Database (ver bloco "SINCRONIZAÇÃO COM FIREBASE" abaixo).
-   Nenhuma foto é gerada — o administrador deve fazer upload das imagens
-   reais que deseja utilizar.
    ====================================================================== */
 
 const LS_KEYS = {
@@ -622,10 +649,8 @@ const LS_KEYS = {
   sessao:     'urna_sessao_v1'
 };
 
-// Metadados fixos das ETAPAS de votação (rótulo, se é majoritário com vice,
-// e qual lista de candidatos usa — dadosCargoId). Os dois turnos de Senador
-// apontam para a MESMA lista de candidatos ('senador'), permitindo votar em
-// qualquer um dos dois nomes em qualquer uma das duas vagas/turnos.
+// Metadados fixos das ETAPAS de votação. Os dois turnos de Senador
+// apontam para a MESMA lista de candidatos ('senador').
 const CARGOS_META = {
   'dep-federal':   { label: 'DEPUTADO FEDERAL',              labelCurto:'Deputado Federal',   majoritario:false, dadosCargoId:'dep-federal' },
   'dep-estadual':  { label: 'DEPUTADO ESTADUAL',             labelCurto:'Deputado Estadual',  majoritario:false, dadosCargoId:'dep-estadual' },
@@ -743,37 +768,39 @@ garantirResultados();
 
 /* ================= SINCRONIZAÇÃO COM FIREBASE (Realtime Database) =================
    O simulador continua funcionando 100% offline via localStorage — o Firebase é
-   apenas uma camada extra de sincronização entre dispositivos/urnas, e nunca
-   impede o uso do app se estiver indisponível, mal configurado ou sem internet.
-
-   - candidatos/config: espelhados por inteiro entre os dispositivos (o último a
-     salvar "vence" — é o comportamento esperado, pois só o admin edita isso).
-   - votos e total de votantes: sincronizados por INCREMENTO atômico do Firebase,
-     para que várias urnas rodando ao mesmo tempo somem os votos corretamente em
-     vez de uma sobrescrever os votos já registrados pela outra.
-   - a sessão de votação em andamento (voto sendo digitado agora) NUNCA é enviada
-     ao Firebase — ela é sempre local a cada dispositivo/urna.
+   apenas uma camada extra de sincronização, e nunca impede o uso do app.
    ==================================================================== */
 let fbDb = null;
 let fbPronto = false;
-let fbAplicandoRemoto = false; // evita eco ao aplicar dados vindos do próprio Firebase
+let fbAplicandoRemoto = false;
 
-// Status visível no painel admin (aba Configurações), para que uma falha de
-// sincronização NUNCA fique escondida apenas no console do navegador:
-//  'desativado' = firebase-config.js não preenchido (app funciona só local)
-//  'conectando' = credenciais preenchidas, aguardando confirmação de conexão
-//  'ok'         = conectado e sincronizando normalmente
-//  'erro'       = configurado, mas a conexão ou a gravação está falhando
-//                 (ex.: databaseURL errado, regras de segurança bloqueando
-//                 escrita, sem internet) — quando isso acontece, os dados
-//                 continuam salvos SÓ neste navegador, por isso o alerta.
 let fbStatus = 'desativado';
 let fbAvisoErroMostrado = false;
 
 function fbInit(){
   try{
     if(typeof firebase === 'undefined' || typeof firebaseConfig === 'undefined'){ fbStatus='desativado'; return; }
-    if(!firebaseConfig.apiKey || firebaseConfig.apiKey.indexOf('SUA_API_KEY') === 0){ fbStatus='desativado'; return; } // firebase-config.js ainda não preenchido
+    if(!firebaseConfig.apiKey || firebaseConfig.apiKey.indexOf('SUA_API_KEY') === 0){ fbStatus='desativado'; return; }
+
+    /* CORREÇÃO DE BUG: o Realtime Database NÃO funciona sem databaseURL.
+       Se firebase-config.js não trouxer o campo, tentamos derivar a URL
+       padrão a partir do projectId. Projetos criados em regiões mais
+       novas usam "<projeto>-default-rtdb.<regiao>.firebasedatabase.app" —
+       nesses casos o campo databaseURL do arquivo de configuração é
+       OBRIGATÓRIO (o Firebase exibe essa URL no topo do painel do
+       Realtime Database). */
+    if(!firebaseConfig.databaseURL){
+      if(firebaseConfig.projectId){
+        firebaseConfig.databaseURL = 'https://' + firebaseConfig.projectId + '-default-rtdb.firebaseio.com';
+        console.warn('firebase-config.js sem databaseURL — usando URL derivada: ' + firebaseConfig.databaseURL +
+          '. Se a sincronização falhar, copie a URL exata mostrada no Console do Firebase.');
+      } else {
+        fbStatus = 'erro';
+        fbAtualizarIndicador();
+        return;
+      }
+    }
+
     fbStatus = 'conectando';
     firebase.initializeApp(firebaseConfig);
     fbDb = firebase.database();
@@ -797,8 +824,17 @@ function fbTelaAdminAberta(){
   const el = document.getElementById('tela-admin');
   return !!(el && !el.classList.contains('hidden'));
 }
+/* CORREÇÃO DE BUG: não re-renderiza o painel admin por cima de quem está
+   digitando (o Firebase notifica de tempos em tempos e apagava os campos). */
+function fbAdminOcupado(){
+  const ae = document.activeElement;
+  if(ae && ae.closest && ae.closest('#admin-conteudo')) return true;
+  return !!(document.querySelector('#admin-conteudo input[type=file]:not([value=""])'));
+}
 function fbAtualizarIndicador(){
-  if(fbTelaAdminAberta() && abaAtual==='config') abrirAbaAdmin('config');
+  if(!fbTelaAdminAberta() || abaAtual!=='config') return;
+  if(fbAdminOcupado()) return;
+  abrirAbaAdmin('config');
 }
 function fbAvisarFalhaSync(){
   fbStatus = 'erro';
@@ -816,7 +852,7 @@ function fbEscutarRemoto(){
     fbAplicandoRemoto = true;
     candidatos = val;
     salvar(LS_KEYS.candidatos, candidatos);
-    if(fbTelaAdminAberta() && !edicaoEmAndamento) abrirAbaAdmin(abaAtual);
+    if(fbTelaAdminAberta() && !edicaoEmAndamento && !fbAdminOcupado()) abrirAbaAdmin(abaAtual);
     fbAplicandoRemoto = false;
   });
   fbRef('config').on('value', snap=>{
@@ -826,7 +862,7 @@ function fbEscutarRemoto(){
     config = val;
     salvar(LS_KEYS.config, config);
     garantirResultados();
-    if(fbTelaAdminAberta()) abrirAbaAdmin(abaAtual);
+    if(fbTelaAdminAberta() && !fbAdminOcupado()) abrirAbaAdmin(abaAtual);
     fbAplicandoRemoto = false;
   });
   fbRef('resultados').on('value', snap=>{
@@ -835,14 +871,14 @@ function fbEscutarRemoto(){
     resultados = val;
     garantirResultados();
     salvar(LS_KEYS.resultados, resultados);
-    if(fbTelaAdminAberta() && abaAtual==='apuracao') abrirAbaAdmin('apuracao');
+    if(fbTelaAdminAberta() && abaAtual==='apuracao' && !fbAdminOcupado()) abrirAbaAdmin('apuracao');
   });
   fbRef('totalVotantes').on('value', snap=>{
     const val = snap.val();
     if(val==null) return;
     sessao.totalVotantes = val;
     salvar(LS_KEYS.sessao, sessao);
-    if(fbTelaAdminAberta() && abaAtual==='apuracao') abrirAbaAdmin('apuracao');
+    if(fbTelaAdminAberta() && abaAtual==='apuracao' && !fbAdminOcupado()) abrirAbaAdmin('apuracao');
   });
 }
 function fbEnviarCandidatos(){
@@ -887,13 +923,13 @@ function voltarInicio(){
 }
 
 /* ================= TELA CHEIA / TRAVAR EM HORIZONTAL =================
-   Nem todo navegador permite forçar a orientação da tela via código —
-   Android/Chrome só permite depois de entrar em tela cheia, e o Safari do
-   iPhone/iPad não permite de jeito nenhum (limitação do próprio iOS, não
-   do simulador). Por isso o aviso "gire o aparelho" em CSS continua
-   sendo o principal recurso — esta função só melhora a experiência nos
-   aparelhos Android/Chrome que suportam o travamento automático. */
+   Nem todo navegador permite forçar a orientação via código — Android/
+   Chrome só permite DEPOIS de entrar em tela cheia, e o Safari do
+   iPhone/iPad não permite de jeito nenhum (limitação do iOS; por isso a
+   dica de instalar o app na Tela de Início). */
+let imersaoTentada = false;
 function tentarModoHorizontal(){
+  imersaoTentada = true;
   const el = document.documentElement;
   const pedirTelaCheia = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
   function travarHorizontal(){
@@ -901,7 +937,7 @@ function tentarModoHorizontal(){
       if(screen.orientation && screen.orientation.lock){
         screen.orientation.lock('landscape').catch(()=>{});
       }
-    }catch(e){ /* navegador não suporta — segue só com o aviso em CSS */ }
+    }catch(e){ /* navegador não suporta */ }
   }
   if(pedirTelaCheia){
     try{
@@ -914,24 +950,53 @@ function tentarModoHorizontal(){
   }
 }
 
-/* ================= MODO QUIOSQUE — bloqueia pinça/zoom/duplo-toque =================
-   Reforço via JS ao "touch-action:none" do CSS. Os campos de formulário do
-   painel admin (texto, senha, arquivo) continuam normais — só a área de
-   votação/telas do simulador ficam travadas a apenas toque simples. */
+/* CORREÇÃO/MELHORIA: pede tela cheia no PRIMEIRO toque do usuário.
+   Navegadores exigem um gesto do usuário para liberar fullscreen — por
+   isso não dá para entrar em tela cheia sozinho ao carregar a página.
+   No primeiro toque em qualquer lugar (botão INICIAR, tecla, etc.) a
+   imersão é ativada e o aparelho trava na horizontal, escondendo os
+   menus do navegador. No iOS, o Safari não tem essa API: a saída é
+   instalar o app (dica exibida automaticamente na tela inicial). */
+function pedirImersaoNoPrimeiroToque(){
+  if(!imersaoTentada) tentarModoHorizontal();
+}
+window.addEventListener('pointerdown', pedirImersaoNoPrimeiroToque, { passive:true });
+window.addEventListener('touchstart', pedirImersaoNoPrimeiroToque, { passive:true });
+
+/* CORREÇÃO DE BUG: ao sair da tela cheia (Esc/back), destrava a
+   orientação — antes ficava preso na horizontal até recarregar. */
+document.addEventListener('fullscreenchange', ()=>{
+  if(!document.fullscreenElement && !document.webkitFullscreenElement){
+    try{ if(screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); }catch(e){}
+  } else {
+    try{ if(screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(()=>{}); }catch(e){}
+  }
+});
+
+/* Se o aparelho for girado para horizontal DEPOIS de já estar em tela
+   cheia, garante a trava de orientação (o giro não conta como gesto,
+   mas como já estamos em fullscreen o lock é permitido). */
+window.addEventListener('orientationchange', ()=>{
+  setTimeout(()=>{
+    if(document.fullscreenElement || document.webkitFullscreenElement){
+      try{ if(screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(()=>{}); }catch(e){}
+    }
+  }, 300);
+});
+
+/* ================= MODO QUIOSQUE — bloqueia pinça com dois dedos =================
+   CORREÇÃO DE BUG: removido o bloqueio de "duplo toque rápido" em JS —
+   ele usava preventDefault no touchend, que CANCELAVA o clique do segundo
+   toque no iOS/Safari: digitar "11" ou "55" rapidamente perdia dígitos.
+   O zoom por duplo-toque agora é controlado só por CSS
+   (touch-action: manipulation / none), que não interfere nos cliques. */
 function elementoPermiteGesto(el){
   return !!(el && el.closest && el.closest('input, select, textarea, .tab-conteudo'));
 }
 document.addEventListener('gesturestart', e=> e.preventDefault());
 document.addEventListener('gesturechange', e=> e.preventDefault());
 document.addEventListener('touchmove', function(e){
-  if(e.touches.length > 1 && !elementoPermiteGesto(e.target)) e.preventDefault(); // impede pinça com dois dedos
-}, { passive:false });
-let ultimoToqueRapido = 0;
-document.addEventListener('touchend', function(e){
-  if(elementoPermiteGesto(e.target)) return;
-  const agora = Date.now();
-  if(agora - ultimoToqueRapido <= 300) e.preventDefault(); // impede zoom por duplo toque
-  ultimoToqueRapido = agora;
+  if(e.touches.length > 1 && !elementoPermiteGesto(e.target)) e.preventDefault();
 }, { passive:false });
 
 /* ================= FLUXO DE VOTAÇÃO ================= */
@@ -939,7 +1004,7 @@ let digitosAtuais = '';
 let candidatoEncontrado = null;
 
 function iniciarVotacao(){
-  tentarModoHorizontal();
+  tentarModoHorizontal(); /* gesto do usuário → tela cheia + horizontal */
   if(sessao.ativa){
     // sessão em andamento — retoma no cargo atual
   } else {
@@ -996,7 +1061,6 @@ function renderTrilhaCargos(){
     chip.textContent = CARGOS_META[id].labelCurto;
     wrap.appendChild(chip);
   });
-  // rola até a etapa atual ficar visível
   const atual = wrap.querySelector('.crumb.atual');
   if(atual) atual.scrollIntoView({inline:'center', block:'nearest'});
 }
@@ -1009,8 +1073,6 @@ function criarPontosBraille(){
 }
 
 function renderTeclado(){
-  // layout físico igual ao modelo real: grade 1-9, 0 sozinho centralizado
-  // embaixo, e BRANCO / CORRIGE / CONFIRMA numa fileira por último.
   const wrap = document.getElementById('teclado');
   wrap.innerHTML = '';
 
@@ -1043,7 +1105,7 @@ function renderTeclado(){
   wrap.appendChild(btnConfirma);
 }
 
-/* ================= SONS DE VOTAÇÃO (sintetizados via Web Audio, sem arquivos externos) ================= */
+/* ================= SONS DE VOTAÇÃO (Web Audio, sem arquivos) ================= */
 let audioCtx = null;
 function getAudioCtx(){
   if(!audioCtx){
@@ -1128,7 +1190,6 @@ function buscarCandidato(){
   const lista = (candidatos[dadosId]||[]).filter(c=>c.ativo!==false);
   let achado = lista.find(c=> c.numero === digitosAtuais);
 
-  // impede votar duas vezes no mesmo candidato ao senado dentro da mesma sessão
   let duplicadoSenado = false;
   if(achado && dadosId==='senador' && (sessao.escolhasSenado||[]).includes(digitosAtuais)){
     duplicadoSenado = true;
@@ -1184,8 +1245,6 @@ function corrigeDigitacao(){
 
 function tentarConfirmar(){
   if(candidatoEncontrado){
-    // a própria tela com foto/nome do candidato já é a confirmação —
-    // um único toque em CONFIRMA registra o voto, como na urna real.
     confirmarVotoCandidato();
   } else {
     mostrarOverlayNulo();
@@ -1255,7 +1314,6 @@ function registrarVoto(cargoId, chave){
   if(!resultados[cargoId][chave]) resultados[cargoId][chave] = 0;
   resultados[cargoId][chave] += 1;
 
-  // marca o candidato como já escolhido nesta sessão, se for turno de senador
   const meta = CARGOS_META[cargoId];
   if(meta && meta.dadosCargoId==='senador' && chave!=='BRANCO' && chave!=='NULO'){
     if(!sessao.escolhasSenado) sessao.escolhasSenado = [];
@@ -1291,6 +1349,7 @@ function finalizarSessao(){
   tocarSom('fim');
   sessao.ativa = false;
   sessao.indiceCargo = 0;
+  sessao.escolhasSenado = []; /* CORREÇÃO: limpa para não vazar p/ backup */
   sessao.totalVotantes = (sessao.totalVotantes||0) + 1;
   persistirTudo();
   fbIncrementarVotante();
@@ -1310,6 +1369,8 @@ function escapeHtml(s){
   return d.innerHTML;
 }
 function toast(msg){
+  const velho = document.querySelector('.msg-toast');
+  if(velho) velho.remove();
   const el = document.createElement('div');
   el.className = 'msg-toast';
   el.textContent = msg;
@@ -1320,8 +1381,6 @@ function toast(msg){
 /* ======================================================================
    ÁREA ADMINISTRATIVA
    ====================================================================== */
-// Senha mestra fixa de acesso rápido (gatilho: 5 cliques no cabeçalho).
-// Continua válida independente da senha administrativa configurável.
 const SENHA_MESTRA = '05048989';
 
 let contagemCliquesHeader = 0;
@@ -1343,6 +1402,7 @@ function abrirLoginAdmin(){
   document.getElementById('input-senha-admin').value = '';
   document.getElementById('erro-senha').style.display = 'none';
   mostrarTela('tela-admin-login');
+  setTimeout(()=>{ const i=document.getElementById('input-senha-admin'); if(i) i.focus(); }, 150);
 }
 function tentarLoginAdmin(){
   const val = document.getElementById('input-senha-admin').value;
@@ -1393,9 +1453,6 @@ function abrirAbaAdmin(id){
 /* ---------- ABA CANDIDATOS ---------- */
 let cargoSelecionadoAdmin = 'dep-federal';
 
-// Lista única de "listas de candidatos" para gerenciamento no admin.
-// Os dois turnos de Senador compartilham a mesma lista ('senador'),
-// então aparecem como uma única opção aqui.
 function listaCargosAdmin(){
   const vistos = new Set();
   const resultado = [];
@@ -1464,7 +1521,7 @@ function fotoPlaceholder(){
   );
 }
 
-let edicaoEmAndamento = null; // {cargoId, index} ou null p/ novo
+let edicaoEmAndamento = null;
 let fotoTemp = null, fotoViceTemp = null;
 
 function formularioCandidato(majoritario){
@@ -1484,7 +1541,7 @@ function formularioCandidato(majoritario){
     <div class="row" style="margin-top:6px;">
       <div>
         <label class="campo">Número</label>
-        <input type="text" id="f-numero" value="${cand?cand.numero:''}" placeholder="Ex: 13">
+        <input type="text" id="f-numero" value="${cand?cand.numero:''}" placeholder="Ex: 13" inputmode="numeric" pattern="[0-9]*">
       </div>
       <div>
         <label class="campo">Nome</label>
@@ -1492,14 +1549,14 @@ function formularioCandidato(majoritario){
       </div>
     </div>
     <label class="campo">Foto do candidato (JPG/PNG)</label>
-    <input type="file" id="f-foto" accept=".jpg,.jpeg,.png" onchange="processarFoto(this,'principal')">
+    <input type="file" id="f-foto" accept=".jpg,.jpeg,.png,image/jpeg,image/png" onchange="processarFoto(this,'principal')">
     <div id="preview-foto-principal">${(cand&&cand.foto)||fotoTemp ? '<img src="'+(fotoTemp||cand.foto)+'" style="width:60px;height:75px;object-fit:cover;border-radius:4px;margin-top:6px;">':''}</div>
     ${!editando ? '<p style="font-size:10px;color:#8ea3b8;margin:4px 0 0;">A foto só é salva quando você clicar em "Adicionar candidato" abaixo.</p>' : ''}
     ${majoritario ? `
       <label class="campo">Nome do vice</label>
       <input type="text" id="f-vice" value="${cand&&cand.vice?escapeHtml(cand.vice):''}" placeholder="Nome do vice">
       <label class="campo">Foto do vice (JPG/PNG)</label>
-      <input type="file" id="f-foto-vice" accept=".jpg,.jpeg,.png" onchange="processarFoto(this,'vice')">
+      <input type="file" id="f-foto-vice" accept=".jpg,.jpeg,.png,image/jpeg,image/png" onchange="processarFoto(this,'vice')">
       <div id="preview-foto-vice">${(cand&&cand.fotoVice)||fotoViceTemp ? '<img src="'+(fotoViceTemp||cand.fotoVice)+'" style="width:60px;height:75px;object-fit:cover;border-radius:4px;margin-top:6px;">':''}</div>
     ` : ''}
     <div class="row" style="margin-top:12px;">
@@ -1512,6 +1569,7 @@ function formularioCandidato(majoritario){
 function processarFoto(input, tipo){
   const file = input.files[0];
   if(!file) return;
+  if(file.size > 8*1024*1024){ toast('Imagem muito grande (máx. 8 MB).'); input.value=''; return; }
   const reader = new FileReader();
   reader.onload = function(e){
     const img = new Image();
@@ -1520,7 +1578,6 @@ function processarFoto(input, tipo){
       const W=300, H=380;
       canvas.width=W; canvas.height=H;
       const ctx = canvas.getContext('2d');
-      // recorte central mantendo proporção (cover)
       const escala = Math.max(W/img.width, H/img.height);
       const sw = W/escala, sh = H/escala;
       const sx = (img.width-sw)/2, sy=(img.height-sh)/2;
@@ -1528,23 +1585,18 @@ function processarFoto(input, tipo){
       const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
       if(tipo==='principal') fotoTemp = dataUrl; else fotoViceTemp = dataUrl;
 
-      // Atualiza só a prévia da foto, sem reconstruir o formulário inteiro
-      // (isso evita apagar Número/Nome que já estejam digitados).
       const previewId = tipo==='principal' ? 'preview-foto-principal' : 'preview-foto-vice';
       const previewEl = document.getElementById(previewId);
       if(previewEl){
         previewEl.innerHTML = '<img src="'+dataUrl+'" style="width:60px;height:75px;object-fit:cover;border-radius:4px;margin-top:6px;">';
       }
 
-      // Se já existe um candidato em edição, salva a foto imediatamente
-      // (não fica dependendo de clicar em "Salvar alterações" depois).
       const editando = edicaoEmAndamento && edicaoEmAndamento.cargoId===cargoSelecionadoAdmin;
       if(editando){
         const atual = candidatos[cargoSelecionadoAdmin][edicaoEmAndamento.index];
         if(tipo==='principal') atual.foto = dataUrl; else atual.fotoVice = dataUrl;
         const ok = persistirTudo();
         if(ok) toast('Foto salva.');
-        // atualiza a miniatura na lista de candidatos, se estiver visível
         const miniImgs = document.querySelectorAll('.lista-candidatos .item-cand .mini-foto');
         if(miniImgs[edicaoEmAndamento.index] && tipo==='principal'){
           miniImgs[edicaoEmAndamento.index].src = dataUrl;
@@ -1627,7 +1679,6 @@ function toggleAtivoCandidato(cargoId, index){
 function excluirCandidato(cargoId, index){
   if(!confirm('Excluir este candidato definitivamente?')) return;
   candidatos[cargoId].splice(index,1);
-  // evita corromper uma edição em andamento cujo índice acabou de deslocar
   if(edicaoEmAndamento && edicaoEmAndamento.cargoId===cargoId){
     edicaoEmAndamento = null;
     fotoTemp = null; fotoViceTemp = null;
@@ -1738,15 +1789,15 @@ function zerarApuracao(){
 }
 
 /* ---------- ABA CONFIGURAÇÕES ---------- */
+const FB_STATUS_INFO = {
+  desativado: { cor:'#8ea3b8', texto:'⚪ Sincronização com Firebase não configurada — candidatos, fotos e resultados ficam salvos SÓ neste navegador (somem ao limpar o cache ou trocar de navegador/dispositivo). Preencha firebase-config.js para ativar.' },
+  conectando: { cor:'#e08e0b', texto:'🟡 Conectando ao Firebase...' },
+  ok:         { cor:'#1e8449', texto:'🟢 Sincronizado com o Firebase — candidatos, fotos e resultados também estão salvos na nuvem.' },
+  erro:       { cor:'#c0392b', texto:'🔴 Falha na sincronização com o Firebase — verifique o campo databaseURL em firebase-config.js (a URL aparece no topo da tela do Realtime Database no Console do Firebase) e as regras de segurança. Os dados estão salvos SÓ neste navegador até isso ser corrigido.' }
+};
 function renderAbaConfig(){
   const somLigado = config.somAtivado !== false;
-  const statusInfo = {
-    desativado: { cor:'#8ea3b8', texto:'⚪ Sincronização com Firebase não configurada — candidatos, fotos e resultados ficam salvos SÓ neste navegador (somem ao limpar o cache ou trocar de navegador/dispositivo). Preencha firebase-config.js para ativar.' },
-    conectando: { cor:'#e08e0b', texto:'🟡 Conectando ao Firebase...' },
-    ok:         { cor:'#1e8449', texto:'🟢 Sincronizado com o Firebase — candidatos, fotos e resultados também estão salvos na nuvem.' },
-    erro:       { cor:'#c0392b', texto:'🔴 Falha na sincronização com o Firebase — verifique databaseURL/regras de segurança no firebase-config.js e no Console do Firebase. Os dados estão salvos SÓ neste navegador até isso ser corrigido.' }
-  }[fbStatus] || statusInfo_desconhecido();
-  function statusInfo_desconhecido(){ return { cor:'#8ea3b8', texto:'⚪ Sincronização com Firebase não configurada.' }; }
+  const statusInfo = FB_STATUS_INFO[fbStatus] || FB_STATUS_INFO.desativado;
   return `
     <div class="card">
       <h4>☁️ Status de sincronização</h4>
@@ -1757,7 +1808,7 @@ function renderAbaConfig(){
       <p style="font-size:11.5px;color:#8ea3b8;">Baixa um arquivo .json com tudo (inclusive as fotos). Guarde esse arquivo — ele permite restaurar os candidatos em qualquer navegador ou dispositivo, mesmo se o armazenamento deste navegador for apagado.</p>
       <button class="btn btn-primario btn-full" onclick="exportarBackup()">Baixar backup completo</button>
       <label class="campo" style="margin-top:10px;">Restaurar a partir de um backup (.json)</label>
-      <input type="file" id="f-importar-backup" accept=".json" onchange="importarBackup(this)">
+      <input type="file" id="f-importar-backup" accept=".json,application/json" onchange="importarBackup(this)">
       <p style="font-size:10px;color:#8ea3b8;margin-top:4px;">Atenção: restaurar substitui TODOS os candidatos, fotos, configurações e resultados atuais.</p>
     </div>
     <div class="card">
@@ -1834,6 +1885,7 @@ function exportarBackup(){
 function importarBackup(input){
   const file = input.files[0];
   if(!file) return;
+  if(file.size > 60*1024*1024){ toast('Arquivo de backup muito grande.'); input.value=''; return; }
   const reader = new FileReader();
   reader.onload = function(e){
     let dados;
@@ -1866,8 +1918,6 @@ function importarBackup(input){
 /* ================= INICIALIZAÇÃO ================= */
 window.addEventListener('DOMContentLoaded', ()=>{
   garantirResultados();
-  // Sessão que ficou "ativa" de um recarregamento/fechamento anterior é
-  // tratada como abandonada — evita continuar a votação de outra pessoa.
   if(sessao.ativa){
     sessao.ativa = false;
     sessao.indiceCargo = 0;
@@ -1876,10 +1926,14 @@ window.addEventListener('DOMContentLoaded', ()=>{
   }
   mostrarTela('tela-inicial');
 
-  // No iPhone/iPad, o navegador não tem API de tela cheia real — o único
-  // jeito de esconder 100% da interface do Safari é abrir pelo ícone
-  // instalado ("Adicionar à Tela de Início"). Mostra a dica só quando faz
-  // sentido: é iOS e ainda não está rodando a partir do ícone instalado.
+  // Enter na senha do admin também faz login.
+  const inpSenha = document.getElementById('input-senha-admin');
+  if(inpSenha){
+    inpSenha.addEventListener('keydown', e=>{
+      if(e.key==='Enter') tentarLoginAdmin();
+    });
+  }
+
   try{
     const ehIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
     const jaInstalado = window.navigator.standalone === true ||

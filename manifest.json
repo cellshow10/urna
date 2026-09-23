@@ -1,7 +1,7 @@
 {
-  "name": "Simulador de Urna Eletrônica",
+  "name": "Simulador de Urna Eletronica",
   "short_name": "Urna Treino",
-  "description": "Simulador educacional de urna eletrônica — projeto de treinamento sem vínculo com a Justiça Eleitoral.",
+  "description": "Simulador educacional de urna eletronica — projeto de treinamento sem vinculo com a Justica Eleitoral.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "fullscreen",
@@ -10,7 +10,7 @@
   "background_color": "#0d1b2a",
   "theme_color": "#0d1b2a",
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
   ]
 }
