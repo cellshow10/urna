@@ -60,7 +60,7 @@ main{flex:1;min-height:0;overflow:auto}
 .k0{grid-column:2}
 .kf{font-size:clamp(1rem,3.2vmin,1.5rem);letter-spacing:.02em;border:0;box-shadow:0 4px 0 rgba(0,0,0,.5)}
 .kb{background:#fff;color:#111;border:3px solid #111;grid-column:1;grid-row:5}.kc{background:#c2410c;grid-column:2;grid-row:5}.kk{background:var(--ok);grid-column:3;grid-row:5}
-.kk:disabled{background:#6b7280;color:#d1d5db;cursor:not-allowed}
+.kk:disabled{background:var(--ok);color:#fff;cursor:not-allowed}
 /* fim */
 #end{background:#fff}
 #end .fim{font-size:clamp(5rem,22vw,11rem);font-weight:900;letter-spacing:.1em;line-height:1}
@@ -306,20 +306,33 @@ function imersao(auto){
   imersaoTentada=true;
   if(emTela()){dica(false);return}
   const e=document.documentElement,pedir=e.requestFullscreen||e.webkitRequestFullscreen;
-  if(!pedir)return;
+  if(!pedir){ // iPhone/Safari: não existe tela cheia no navegador; só instalando na tela inicial
+    const inst=navigator.standalone||matchMedia('(display-mode:standalone),(display-mode:fullscreen)').matches;
+    if(!inst&&!avisoIos){avisoIos=true;toast('Para tela cheia no iPhone: toque em Compartilhar e depois em "Adicionar à Tela de Início".')}
+    return;
+  }
+  const ok=()=>{dica(false);travar()},falhou=()=>{if(!emTela())dica(true)};
   try{const r=pedir.call(e);
-    if(r&&r.then)r.then(()=>{dica(false);travar()},()=>{if(auto)dica(true)});else{dica(false);travar()}
-  }catch{if(auto)dica(true)}
+    if(r&&r.then)r.then(ok,falhou);else setTimeout(()=>emTela()?ok():falhou(),300);
+  }catch{falhou()}
 }
+let avisoIos=false;
 /* Ao girar para horizontal: tenta tela cheia na hora. Se o navegador exigir um toque,
-   mostra uma faixa e o próximo toque em qualquer lugar ativa a tela cheia. */
+   mostra uma faixa e o próximo toque em qualquer lugar ativa a tela cheia.
+   IMPORTANTE: no celular o navegador só aceita tela cheia em pointerup/touchend/click
+   (pointerdown de toque NÃO conta como gesto do usuário). */
 const mqH=matchMedia('(orientation:landscape)'),mqT=matchMedia('(pointer:coarse)');
 const aoGirar=e=>{if(e.matches&&mqT.matches)imersao(true);else dica(false)};
 mqH.addEventListener?mqH.addEventListener('change',aoGirar):mqH.addListener(aoGirar);
-window.addEventListener('pointerdown',()=>{
-  if($('#fsdica').classList.contains('on')||(!imersaoTentada&&!emTela()))imersao(false);
-},{passive:true});
-document.addEventListener('fullscreenchange',()=>{if(!emTela()){try{screen.orientation&&screen.orientation.unlock&&screen.orientation.unlock()}catch{}}});
+const toqueFs=()=>{
+  if(emTela()){dica(false);return}
+  if($('#fsdica').classList.contains('on')||(!imersaoTentada&&mqT.matches))imersao(false);
+};
+window.addEventListener('pointerup',toqueFs,{passive:true});
+window.addEventListener('touchend',toqueFs,{passive:true});
+const aoMudarFs=()=>{if(emTela()){dica(false);travar()}else{try{screen.orientation&&screen.orientation.unlock&&screen.orientation.unlock()}catch{}}};
+document.addEventListener('fullscreenchange',aoMudarFs);
+document.addEventListener('webkitfullscreenchange',aoMudarFs);
 const A={
   d:(i)=>digitar(i),corrige,branco,confirma,iniciar,inicio:A_inicio,
   tela:()=>imersao(false),
