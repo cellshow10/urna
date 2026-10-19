@@ -59,7 +59,7 @@ main{flex:1;min-height:0;overflow:auto}
 .k:active{transform:translateY(3px);box-shadow:none}
 .k0{grid-column:2}
 .kf{font-size:clamp(1rem,3.2vmin,1.5rem);letter-spacing:.02em;border:0;box-shadow:0 4px 0 rgba(0,0,0,.5)}
-.kb{background:#fff;color:#111;border:3px solid #111}.kc{background:#c2410c}.kk{background:var(--ok)}
+.kb{background:#fff;color:#111;border:3px solid #111;grid-column:1;grid-row:5}.kc{background:#c2410c;grid-column:2;grid-row:5}.kk{background:var(--ok);grid-column:3;grid-row:5}
 .kk:disabled{background:#6b7280;color:#d1d5db;cursor:not-allowed}
 /* fim */
 #end{background:#fff}
@@ -93,6 +93,8 @@ input[type=file]{font-size:1rem;max-width:100%}
 .bar{height:.9rem;background:#e5e7eb;border-radius:.5rem;overflow:hidden;margin-top:.25rem}.bar i{display:block;height:100%;background:var(--azul)}
 .res{margin:.7rem 0;font-size:1.1rem}.res .l{display:flex;justify-content:space-between;gap:.5rem;font-weight:700}
 .prev img{width:60px;height:76px;object-fit:cover;border-radius:.3rem;margin-top:.4rem}
+#fsdica{display:none;position:fixed;left:0;right:0;bottom:0;z-index:998;background:var(--amarelo);color:#111;font-size:1.3rem;font-weight:800;text-align:center;padding:1rem}
+#fsdica.on{display:block}
 #girar{display:none}
 @media (orientation:portrait) and (max-width:900px) and (pointer:coarse){
 #girar{display:flex;position:fixed;inset:0;z-index:999;background:#111827;color:#fff;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;text-align:center;padding:1.5rem}
@@ -147,6 +149,7 @@ input[type=file]{font-size:1rem;max-width:100%}
   </section>
 </main>
 <div id="girar" role="dialog" aria-label="Girar o aparelho"><div class="ic">🔄</div><p>Para ver melhor e votar com mais conforto, <b>gire o aparelho na horizontal</b>.</p><button class="btn" data-a="ignorar">Continuar assim mesmo</button></div>
+<div id="fsdica" role="status">👆 Toque na tela para ativar a tela cheia</div>
 <dialog id="dlg"><h3></h3><p></p><div class="row"></div></dialog>
 
 <script>
@@ -231,7 +234,7 @@ function montarTeclado(){
     const b=document.createElement('button');b.className='k '+c;b.textContent=l;b.dataset.a=a;if(a==='confirma')b.id='bk';t.appendChild(b)});
 }
 function iniciar(){
-  imersao();
+  imersao(false);
   if(!ativos().length){toast('Nenhum candidato ativo. Cadastre na área administrativa.');return}
   ocupado=false;dig='';achado=null;montarTeclado();tela('vote');desenhar();
 }
@@ -296,17 +299,30 @@ function abrirLogin(){
 $('#lg-pw').addEventListener('keydown',e=>{if(e.key==='Enter')A.entrar()});
 /* Tela cheia + trava em horizontal (Android/Chrome; o Safari do iOS não permite) */
 let imersaoTentada=false;
-function imersao(){
+const emTela=()=>!!(document.fullscreenElement||document.webkitFullscreenElement);
+const travar=()=>{try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{})}catch{}};
+function dica(v){$('#fsdica').classList.toggle('on',v)}
+function imersao(auto){
   imersaoTentada=true;
+  if(emTela()){dica(false);return}
   const e=document.documentElement,pedir=e.requestFullscreen||e.webkitRequestFullscreen;
-  const travar=()=>{try{screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape').catch(()=>{})}catch{}};
-  try{const r=pedir&&pedir.call(e);r&&r.then?r.then(travar,travar):travar()}catch{travar()}
+  if(!pedir)return;
+  try{const r=pedir.call(e);
+    if(r&&r.then)r.then(()=>{dica(false);travar()},()=>{if(auto)dica(true)});else{dica(false);travar()}
+  }catch{if(auto)dica(true)}
 }
-window.addEventListener('pointerdown',()=>{if(!imersaoTentada)imersao()},{passive:true});
-document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement){try{screen.orientation&&screen.orientation.unlock&&screen.orientation.unlock()}catch{}}});
+/* Ao girar para horizontal: tenta tela cheia na hora. Se o navegador exigir um toque,
+   mostra uma faixa e o próximo toque em qualquer lugar ativa a tela cheia. */
+const mqH=matchMedia('(orientation:landscape)'),mqT=matchMedia('(pointer:coarse)');
+const aoGirar=e=>{if(e.matches&&mqT.matches)imersao(true);else dica(false)};
+mqH.addEventListener?mqH.addEventListener('change',aoGirar):mqH.addListener(aoGirar);
+window.addEventListener('pointerdown',()=>{
+  if($('#fsdica').classList.contains('on')||(!imersaoTentada&&!emTela()))imersao(false);
+},{passive:true});
+document.addEventListener('fullscreenchange',()=>{if(!emTela()){try{screen.orientation&&screen.orientation.unlock&&screen.orientation.unlock()}catch{}}});
 const A={
   d:(i)=>digitar(i),corrige,branco,confirma,iniciar,inicio:A_inicio,
-  tela:()=>imersao(),
+  tela:()=>imersao(false),
   ignorar:()=>$('#girar').classList.add('off'),
   fonte:(i)=>{S.cfg.fs=Math.min(1.5,Math.max(.9,+(S.cfg.fs+.15*i).toFixed(2)));aplicarFonte();persist()},
   async entrar(){
