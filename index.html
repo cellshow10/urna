@@ -2,1983 +2,404 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>Simulador de Urna Eletrônica — Projeto Educacional</title>
-
-<!-- Permite instalar como app (ícone na tela inicial) e abrir SEM NENHUM
-     menu/barra do navegador — é o único jeito de esconder 100% da
-     interface do navegador em iPhone (o Safari do iOS não permite tela
-     cheia real dentro do próprio navegador, só via "Adicionar à Tela de
-     Início"). No Android/Chrome isso também melhora e soma com o botão
-     "tela cheia" do simulador. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simulador de Urna Eletrônica — 2º Turno</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0d1b2a">
+<meta name="theme-color" content="#111827">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Urna Treino">
 <link rel="apple-touch-icon" href="./icon-192.png">
-<link rel="icon" href="./icon-192.png">
-
 <style>
-  :root{
-    --azul-escuro:#0d1b2a;
-    --azul:#1b3a57;
-    --azul-claro:#2d6a9f;
-    --cinza-urna:#2b2f36;
-    --cinza-claro:#e9edf2;
-    --verde:#1e8449;
-    --verde-escuro:#166534;
-    --laranja:#e08e0b;
-    --vermelho:#c0392b;
-    --texto:#eef2f6;
-    --amarelo:#f4c542;
-    /* carcaça plástica (aparência física do equipamento) */
-    --plastico:#e7e5df;
-    --plastico-sombra:#c7c4bb;
-    --plastico-escuro:#b7b4aa;
-    --tela-fundo:#17241d;
-    --tela-fundo2:#101a14;
-    --tela-texto:#e9f3ea;
-  }
-  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html,body{margin:0;padding:0;height:100%;}
-  body{
-    font-family:"Segoe UI", Arial, Helvetica, sans-serif;
-    background:#0d1b2a;
-    color:var(--texto);
-    height:100vh;
-    height:-webkit-fill-available;
-    height:100dvh; /* acompanha a barra do navegador sumindo/aparecendo */
-    display:flex;
-    align-items:stretch;
-    justify-content:stretch;
-    padding:0;
-    overflow:hidden;
-    overscroll-behavior:none;
-    touch-action:manipulation; /* mata o zoom por duplo-toque SEM quebrar cliques */
-    -webkit-text-size-adjust:100%;
-  }
-  /* CARCAÇA — sempre ocupa 100% da tela, com ou sem tela cheia. */
-  #app{
-    width:100%;
-    background:linear-gradient(180deg,var(--plastico),var(--plastico-sombra) 96%);
-    border-radius:0;
-    padding:10px 14px 14px;
-    padding-top:max(10px, env(safe-area-inset-top));
-    padding-bottom:max(10px, env(safe-area-inset-bottom));
-    padding-left:max(14px, env(safe-area-inset-left));
-    padding-right:max(14px, env(safe-area-inset-right));
-    box-shadow:none;
-    display:flex;
-    flex-direction:column;
-    height:100%;
-    min-height:0;
-    overflow:hidden;
-    position:relative;
-    border:none;
-  }
-  header.topo{
-    margin:14px 4px 10px;
-    text-align:center;
-    padding-bottom:8px;
-    border-bottom:1px solid #a8a59a;
-    cursor:pointer;
-  }
-  header.topo .titulo{
-    font-size:13.5px;
-    font-weight:800;
-    letter-spacing:.8px;
-    color:#2a2d33;
-  }
-  header.topo .subtitulo{
-    margin-top:4px;
-    display:inline-block;
-    background:#2a2d33;
-    color:var(--amarelo);
-    font-size:9.5px;
-    font-weight:800;
-    letter-spacing:1.5px;
-    padding:2px 10px;
-    border-radius:3px;
-  }
-  header.topo .aviso{
-    margin-top:5px;
-    font-size:8.5px;
-    color:#6b6e74;
-    line-height:1.3;
-  }
-  /* TELA (visor LCD embutido na carcaça) */
-  .tela{
-    flex:1;
-    min-height:0;
-    display:flex;
-    flex-direction:column;
-    padding:14px 12px;
-    animation:fadein .18s ease;
-    background:linear-gradient(180deg,var(--tela-fundo),var(--tela-fundo2));
-    border-radius:10px;
-    margin:0 4px 12px;
-    box-shadow:inset 0 0 0 3px #05100a, inset 0 0 18px rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.4);
-    color:var(--tela-texto);
-    position:relative;
-    overflow:hidden;
-  }
-  @keyframes fadein{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-  .hidden{display:none !important;}
-
-  /* TELA INICIAL */
-  #tela-inicial{align-items:center; justify-content:center; text-align:center; gap:14px; overflow-y:auto;}
-  #tela-inicial .icone-urna{font-size:64px;}
-  #tela-inicial h2{margin:0; font-size:18px;}
-  #tela-inicial p{margin:0; color:#b7c3d0; font-size:13px; line-height:1.5;}
-  .btn{
-    border:none;
-    border-radius:10px;
-    padding:14px 18px;
-    font-size:15px;
-    font-weight:700;
-    cursor:pointer;
-    transition:transform .05s ease, filter .15s ease;
-    color:#fff;
-    touch-action:manipulation;
-  }
-  .btn:active{transform:scale(.97);}
-  .btn-primario{background:var(--verde); box-shadow:0 4px 0 var(--verde-escuro);}
-  .btn-primario:active{box-shadow:0 1px 0 var(--verde-escuro); transform:translateY(3px) scale(.99);}
-  .btn-secundario{background:#3a4048; color:#dfe6ee;}
-  .btn-perigo{background:var(--vermelho);}
-  .btn-laranja{background:var(--laranja); color:#241a00;}
-  .btn-link{background:none; border:none; color:#7fa9d4; font-size:12px; text-decoration:underline; cursor:pointer; padding:6px; touch-action:manipulation;}
-  .btn-contorno{
-    background:rgba(255,255,255,.05); color:#eef2f6; border:1.5px solid rgba(255,255,255,.25);
-    display:flex; align-items:center; justify-content:center; gap:8px;
-  }
-  .btn-contorno:active{background:rgba(255,255,255,.12);}
-  .btn-full{width:100%;}
-  .btn-lg{padding:18px; font-size:17px;}
-
-  /* TELA VOTACAO — visor + teclado físico */
-  #tela-votacao{gap:8px; padding-bottom:12px;}
-  .rotulo-treinamento{display:none;}
-
-  /* trilha de etapas (breadcrumb) no topo do visor */
-  .trilha-cargos{
-    display:flex; align-items:center; gap:3px;
-    overflow-x:auto; white-space:nowrap;
-    padding-bottom:7px; margin-bottom:2px;
-    border-bottom:1px dashed #2c4232;
-    -webkit-overflow-scrolling:touch;
-    scrollbar-width:none;
-  }
-  .trilha-cargos::-webkit-scrollbar{height:3px;}
-  .trilha-cargos::-webkit-scrollbar-thumb{background:#2c4232;}
-  .crumb{
-    font-size:9px; font-weight:700; letter-spacing:.2px;
-    padding:4px 8px; border-radius:20px; flex-shrink:0;
-    background:rgba(255,255,255,.05); color:#4a6a56;
-  }
-  .crumb.feito{color:#8fb89e;}
-  .crumb.atual{background:var(--amarelo); color:#1b1b1b;}
-
-  .cargo-label{
-    text-align:center;
-    padding-bottom:4px;
-    flex-shrink:0;
-  }
-  .cargo-label .nome-cargo{font-size:14.5px; font-weight:800; color:var(--tela-texto); letter-spacing:.5px;}
-  .cargo-label .progresso{font-size:10px; color:#7fa88a; margin-top:2px;}
-
-  .caixas-digitos{
-    display:flex; gap:6px; justify-content:center; flex-wrap:wrap;
-    padding:4px 0;
-    flex-shrink:0;
-  }
-  .caixa-digito{
-    width:32px; height:42px;
-    border:2px solid #2c4232; border-radius:6px;
-    background:rgba(0,0,0,.28);
-    display:flex; align-items:center; justify-content:center;
-    font-size:21px; font-weight:800; font-family:"Consolas", monospace;
-    color:#fff;
-  }
-  .caixa-digito.vazia{border-color:#213328; color:transparent;}
-  .caixa-digito.preenchida{border-color:#4a6a56;}
-
-  .msg-numero-errado{
-    text-align:center; color:#ff9d8a; font-weight:800; font-size:13px;
-    letter-spacing:.5px; min-height:16px;
-    flex-shrink:0;
-  }
-
-  .painel-candidato{
-    background:rgba(0,0,0,.22);
-    border:1px solid #2c4232;
-    border-radius:8px;
-    padding:11px;
-    min-height:132px;
-    display:flex;
-    gap:12px;
-    align-items:center;
-    flex-shrink:0;
-    overflow:hidden; /* nunca deixa nada vazar pra fora da caixa cinza */
-  }
-  .painel-candidato.oculto{visibility:hidden;}
-  .painel-candidato .foto-wrap{
-    width:90px;height:112px;border-radius:5px;overflow:hidden;background:#0d1712;
-    display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid #2c4232;
-  }
-  .painel-candidato .foto-wrap img{width:100%;height:100%;object-fit:cover;}
-  .painel-candidato .foto-wrap.sem-foto{font-size:9px;color:#5c7d68;text-align:center;padding:4px;}
-  .painel-candidato .info{flex:1; min-width:0; overflow:hidden;}
-  .painel-candidato .info .num{font-size:21px; font-weight:800; color:#fff; font-family:"Consolas",monospace; overflow-wrap:anywhere; line-height:1.15;}
-  .painel-candidato .info .nome{font-size:14.5px; font-weight:700; margin-top:2px; color:var(--tela-texto); overflow-wrap:break-word; line-height:1.25;}
-  .painel-candidato .info .vice{font-size:11px; color:#9fc2ac; margin-top:5px; overflow-wrap:break-word; line-height:1.3;}
-  .painel-candidato .info .vice b{color:#dfe6ee;}
-
-  /* teclado físico — cresce para ocupar todo o espaço vertical
-     disponível na tela (em vez de ficar do tamanho do texto/padding). */
-  .teclado-fisico{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    grid-template-rows:repeat(5,1fr);
-    gap:7px;
-    padding:0 2px;
-    margin-top:4px;
-    flex:1;
-    min-height:0;
-  }
-  .teclado-fisico > :nth-child(10){grid-column:2;}
-  .teclado-fisico > :nth-child(11){grid-row:5; grid-column:1;}
-  .teclado-fisico > :nth-child(12){grid-row:5; grid-column:2;}
-  .teclado-fisico > :nth-child(13){grid-row:5; grid-column:3;}
-  .tecla-num{
-    background:#333f4c;
-    color:#fff;
-    border:none;
-    border-radius:9px;
-    font-size:26px;
-    font-weight:800;
-    padding:0;
-    width:100%;
-    height:100%;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    cursor:pointer;
-    position:relative;
-    box-shadow:0 3px 0 rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.08);
-    touch-action:manipulation;
-  }
-  .tecla-num:active{transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.35);}
-  .tecla-num .pontos-braille{position:absolute; right:6px; bottom:6px;}
-
-  .tecla-funcao{
-    border:none;
-    border-radius:9px;
-    cursor:pointer;
-    font-weight:800;
-    font-size:12px;
-    letter-spacing:.4px;
-    padding:4px 2px;
-    width:100%;
-    height:100%;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
-    justify-content:center;
-    gap:5px;
-    box-shadow:0 3px 0 rgba(0,0,0,.3);
-    touch-action:manipulation;
-  }
-  .tecla-funcao:active{transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.3);}
-  .tecla-branco{background:#efece3; color:#1c1c1c; border:1px solid #cfcabc;}
-  .tecla-corrige{background:#e8710d; color:#241400;}
-  .tecla-confirma{background:#57964f; color:#0c1f0b;}
-  .tecla-confirma:disabled{background:#7c8a80; color:#3a3f37; cursor:not-allowed; box-shadow:0 3px 0 rgba(0,0,0,.2);}
-
-  .pontos-braille{
-    display:grid;
-    grid-template-columns:repeat(2,4px);
-    grid-template-rows:repeat(3,4px);
-    gap:2.5px;
-  }
-  .pontos-braille span{width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.5;}
-
-  /* OVERLAY */
-  .overlay{
-    position:absolute; inset:0;
-    background:rgba(5,8,12,.92);
-    display:flex; align-items:center; justify-content:center;
-    padding:22px; z-index:50;
-  }
-  .overlay-caixa{
-    background:var(--cinza-urna);
-    border:2px solid var(--amarelo);
-    border-radius:14px;
-    padding:22px 18px;
-    text-align:center;
-    max-width:340px;
-    width:100%;
-  }
-  .overlay-caixa h3{margin:0 0 8px; font-size:19px; letter-spacing:.5px;}
-  .overlay-caixa p{margin:0 0 16px; font-size:13px; color:#c3cdd7; line-height:1.5;}
-  .overlay-caixa .linha-btns{display:flex; gap:10px;}
-  .overlay-caixa .linha-btns .btn{flex:1;}
-
-  /* TELA FIM — réplica do visor real (fundo branco, monocromático) */
-  #tela-fim{
-    align-items:stretch; justify-content:flex-start; text-align:center;
-    padding:0; background:#fff; color:#000; border-radius:10px; overflow:hidden;
-    position:relative;
-  }
-  .fim-topo{
-    display:flex; align-items:center; justify-content:space-between;
-    background:#000; color:#fff; padding:6px 9px; font-size:9.5px; font-weight:700;
-    letter-spacing:.3px;
-    flex-shrink:0;
-  }
-  .fim-topo .fim-treino{color:#9a9a9a; font-size:9.5px; letter-spacing:.5px;}
-  .fim-topo .bateria{display:flex; align-items:center; gap:2px;}
-  .fim-topo .bateria .corpo{
-    width:20px; height:10px; border:1.4px solid #fff; border-radius:2px; position:relative; display:flex; padding:1px; gap:1px;
-  }
-  .fim-topo .bateria .corpo span{flex:1; background:#3fcf50; border-radius:1px;}
-  .fim-topo .bateria .ponta{width:2px; height:5px; background:#fff; border-radius:0 2px 2px 0;}
-  .fim-meio{
-    flex:1; display:flex; align-items:center; justify-content:center;
-    min-height:0; position:relative;
-  }
-  .fim-meio .palavra-fim{font-size:clamp(40px, 18vh, 76px); font-weight:800; letter-spacing:4px; color:#000; font-family:Arial, Helvetica, sans-serif;}
-  .fim-votou{
-    position:absolute; right:12px; bottom:12px;
-    font-size:clamp(14px, 5vh, 22px); font-weight:700; color:#c9c9c9; letter-spacing:1px;
-  }
-  .fim-rodape{
-    background:#0a1622; color:#dfe6ee; font-size:9px; padding:5px 9px;
-    display:flex; justify-content:center; gap:14px; flex-wrap:wrap;
-    flex-shrink:0;
-  }
-
-  /* ADMIN */
-  .admin-header{
-    display:flex; align-items:center; justify-content:space-between;
-    background:var(--azul-escuro); padding:12px 14px; border-bottom:3px solid var(--amarelo);
-    flex-shrink:0;
-  }
-  .admin-header h2{font-size:15px; margin:0;}
-  .tabs{display:flex; gap:4px; padding:8px 10px 0; flex-wrap:wrap; background:#1b1f26; flex-shrink:0;}
-  .tab-btn{
-    background:#2b2f36; color:#b7c3d0; border:none; padding:8px 10px; border-radius:8px 8px 0 0;
-    font-size:11.5px; font-weight:700; cursor:pointer; touch-action:manipulation;
-  }
-  .tab-btn.ativo{background:var(--cinza-urna); color:var(--amarelo);}
-  .tab-conteudo{padding:14px; overflow-y:auto; flex:1; min-height:0; touch-action:pan-y; -webkit-overflow-scrolling:touch;}
-  .card{
-    background:#1b1f26; border:1px solid #2d3239; border-radius:10px; padding:12px; margin-bottom:12px;
-  }
-  .card h4{margin:0 0 8px; font-size:13px; color:var(--amarelo);}
-  label.campo{display:block; font-size:11px; color:#a9b7c4; margin:8px 0 3px;}
-  input[type=text], input[type=number], input[type=password], select{
-    width:100%; padding:11px 9px; border-radius:6px; border:1px solid #3a4048; background:#0f1319; color:#fff; font-size:16px;
-  }
-  input[type=file]{font-size:11px; color:#c3cdd7;}
-  .row{display:flex; gap:8px; flex-wrap:wrap;}
-  .row > *{flex:1; min-width:110px;}
-  .lista-candidatos{display:flex; flex-direction:column; gap:8px; margin-top:10px;}
-  .item-cand{
-    display:flex; gap:10px; align-items:center; background:#0f1319; border:1px solid #2d3239; border-radius:8px; padding:8px;
-  }
-  .item-cand .mini-foto{width:40px;height:50px;border-radius:4px;object-fit:cover;background:#232a33; flex-shrink:0;}
-  .item-cand .dados{flex:1; font-size:12px; min-width:0;}
-  .item-cand .dados .n{color:var(--amarelo); font-weight:800;}
-  .item-cand .dados .inativo-tag{color:#e08e0b; font-size:10px; font-weight:700;}
-  .item-cand .btns{display:flex; gap:5px;}
-  .item-cand .btns button{
-    border:none; border-radius:6px; padding:6px 8px; font-size:10.5px; cursor:pointer; color:#fff; touch-action:manipulation;
-  }
-  .tabela-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch;}
-  table.resultados{width:100%; min-width:420px; border-collapse:collapse; font-size:12px; margin-top:6px;}
-  table.resultados th, table.resultados td{border-bottom:1px solid #2d3239; padding:6px 4px; text-align:left;}
-  table.resultados th{color:#8ea3b8; font-size:10.5px; text-transform:uppercase;}
-  .barra-bg{background:#0f1319; border-radius:5px; height:10px; overflow:hidden; margin-top:3px;}
-  .barra-fill{height:100%; background:var(--azul-claro);}
-  .stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;}
-  .stat-box{background:#0f1319; border-radius:8px; padding:10px; text-align:center;}
-  .stat-box .v{font-size:20px; font-weight:800; color:var(--amarelo);}
-  .stat-box .l{font-size:10px; color:#8ea3b8; margin-top:2px;}
-  .ordem-item{display:flex; align-items:center; gap:8px; background:#0f1319; border:1px solid #2d3239; border-radius:8px; padding:8px 10px; margin-bottom:6px;}
-  .ordem-item .nome-c{flex:1; font-size:12.5px; font-weight:700;}
-  .ordem-item .setas button{background:#3a4048; border:none; color:#fff; border-radius:5px; padding:5px 8px; cursor:pointer; font-size:11px; touch-action:manipulation;}
-  .msg-toast{
-    position:fixed; bottom:18px; left:50%; transform:translateX(-50%);
-    background:var(--verde-escuro); color:#fff; padding:10px 18px; border-radius:8px; font-size:12.5px; z-index:200;
-    box-shadow:0 6px 20px rgba(0,0,0,.4);
-    max-width:90vw; text-align:center;
-  }
-  .rodape-admin{padding:10px 14px; text-align:center; border-top:1px solid #2d3239; flex-shrink:0;}
-  ::-webkit-scrollbar{width:7px;}
-  ::-webkit-scrollbar-thumb{background:#3a4048; border-radius:4px;}
-
-  @media (max-width:400px){
-    .caixa-digito{width:27px; height:36px; font-size:18px;}
-  }
-  @media (max-width:380px){
-    .item-cand{flex-wrap:wrap;}
-    .item-cand .btns{width:100%; justify-content:flex-end; margin-top:4px;}
-    .stat-grid{grid-template-columns:1fr;}
-  }
-
-  /* AVISO "GIRE O APARELHO" — só em telas de toque em pé. */
-  #aviso-girar{display:none;}
-  @media (orientation:portrait) and (max-width:900px) and (pointer:coarse){
-    #aviso-girar{
-      display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;
-      position:fixed; inset:0; background:#0d1b2a; color:#fff; z-index:999; text-align:center; padding:24px;
-    }
-    #aviso-girar.ignorado{display:none;}
-    #aviso-girar .rotar-icone{font-size:56px; animation:girar-tela 1.6s ease-in-out infinite;}
-    #aviso-girar p{font-size:16px; line-height:1.6; max-width:300px; color:#dfe6ee;}
-  }
-  @keyframes girar-tela{0%,100%{transform:rotate(0deg);}50%{transform:rotate(90deg);}}
-
-  /* MODO PAISAGEM — lado a lado (igual à urna real) + cabeçalho compacto
-     para aproveitar ao máximo a tela. O atalho secreto do admin (5 toques)
-     continua funcionando na faixa fina do cabeçalho. */
-  @media (orientation:landscape) and (pointer:coarse){
-    #app{padding-top:max(4px, env(safe-area-inset-top)); padding-bottom:max(4px, env(safe-area-inset-bottom));}
-    header.topo{
-      margin:0 4px 4px; padding:2px 0 3px;
-      border-bottom:1px solid #a8a59a;
-      display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:nowrap;
-    }
-    header.topo .titulo{font-size:8.5px; letter-spacing:.6px; white-space:nowrap;}
-    header.topo .subtitulo{margin:0; font-size:7px; padding:1px 6px; letter-spacing:1px; white-space:nowrap;}
-    header.topo .aviso{display:none;}
-    /* Igual à urna real: visor CLARO na ESQUERDA, painel PRETO com o
-       teclado físico na DIREITA. */
-    #tela-votacao{
-      display:grid;
-      grid-template-columns:1fr 1.05fr;
-      height:100%;
-      grid-template-areas:
-        "rotulo  rotulo"
-        "trilha  trilha"
-        "cargo   teclado"
-        "digitos teclado"
-        "msg     teclado"
-        "painel  teclado";
-      grid-template-rows:auto auto auto auto 1fr auto;
-      gap:4px 0;
-      align-items:start;
-      background:linear-gradient(180deg,#d9d8d4,#c9c8c2);
-      box-shadow:inset 0 0 0 3px #a9a89e, inset 0 0 14px rgba(0,0,0,.15);
-      color:#1c1c1c;
-    }
-    .rotulo-treinamento{
-      grid-area:rotulo; display:block; text-align:center;
-      font-size:10px; letter-spacing:1px; color:#8c8b85; padding-top:2px;
-    }
-    #trilha-cargos{grid-area:trilha; border-bottom-color:#b5b4ac; padding-left:14px;}
-    .crumb{background:rgba(0,0,0,.05); color:#8c8b85;}
-    .crumb.feito{color:#4c6a58;}
-    .cargo-label{grid-area:cargo; padding-right:16px; padding-left:14px; text-align:left;}
-    .cargo-label .nome-cargo{color:#1c1c1c; font-size:19px;}
-    .cargo-label .progresso{color:#6b6a63; font-size:12px;}
-    #caixas-digitos{grid-area:digitos; padding-right:16px; padding-left:14px; justify-content:flex-start;}
-    .caixa-digito{background:#fff; border-color:#9a998f; color:#1c1c1c; width:38px; height:50px; font-size:24px;}
-    .caixa-digito.vazia{border-color:#b7b6ae; color:transparent;}
-    #msg-numero-errado{grid-area:msg; padding-right:16px; padding-left:14px; text-align:left; color:#b3261e; font-size:15px;}
-    #painel-candidato{grid-area:painel; align-self:start; margin:0 16px 0 14px; background:rgba(255,255,255,.55); border-color:#b7b6ae; padding:14px;}
-    .painel-candidato .foto-wrap{background:#e7e6e1; border-color:#b7b6ae; width:108px; height:134px;}
-    .painel-candidato .foto-wrap.sem-foto{color:#8c8b85;}
-    .painel-candidato .info .num{color:#1c1c1c; font-size:25px;}
-    .painel-candidato .info .nome{color:#1c1c1c; font-size:19px;}
-    .painel-candidato .info .vice{color:#4c6a58; font-size:14px;}
-    .painel-candidato .info .vice b{color:#1c1c1c;}
-    #teclado{
-      grid-area:teclado;
-      height:100%;
-      align-content:center;
-      padding:12px 14px;
-      margin:0;
-      background:#22262a;
-      border-radius:0;
-    }
-    .tecla-num{font-size:26px;}
-    .tecla-funcao{font-size:13px;}
-  }
-
-  /* Telas baixas em paisagem (celulares antigos, modo tela cheia com
-     pouca altura): encolhe tudo proporcionalmente para nunca transbordar. */
-  @media (orientation:landscape) and (max-height:540px){
-    header.topo{margin-bottom:2px; padding-bottom:2px;}
-    .rotulo-treinamento{font-size:8px !important; padding-top:0 !important;}
-    .cargo-label .nome-cargo{font-size:15px !important;}
-    .cargo-label .progresso{font-size:10px !important;}
-    .caixa-digito{width:28px !important; height:36px !important; font-size:17px !important;}
-    .painel-candidato{padding:8px !important; min-height:0;}
-    .painel-candidato .foto-wrap{width:72px !important; height:90px !important;}
-    .painel-candidato .info .num{font-size:19px !important;}
-    .painel-candidato .info .nome{font-size:14px !important;}
-    .painel-candidato .info .vice{font-size:11px !important;}
-    .tecla-num{font-size:19px !important; border-radius:7px;}
-    .tecla-funcao{font-size:10.5px !important; gap:3px;}
-    .msg-numero-errado{font-size:12px !important; min-height:12px;}
-    .crumb{font-size:8px !important; padding:3px 6px !important;}
-    #teclado{padding:8px 10px !important; gap:5px !important;}
-    .fim-meio .palavra-fim{font-size:clamp(32px, 16vh, 48px) !important;}
-  }
-
-  /* MODO QUIOSQUE — bloqueia pinça/zoom por gesto nas áreas de votação;
-     formulários do admin continuam roláveis/digitáveis normalmente. */
-  html{overscroll-behavior:none;}
-  #tela-inicial, #tela-votacao, #tela-fim, #teclado, .painel-candidato{
-    touch-action:none;
-    -webkit-touch-callout:none;
-    -webkit-user-select:none;
-    user-select:none;
-  }
-  #tela-inicial{touch-action:pan-y;}
-
-  /* Quando aberto como app instalado ou em tela cheia, garante cor na
-     barra de status/notch. */
-  @media (display-mode: fullscreen), (display-mode: standalone){
-    body{background:#0d1b2a;}
-  }
+:root{--bg:#eceae4;--ink:#111827;--ok:#15803d;--warn:#b45309;--bad:#b91c1c;--azul:#1d4ed8;--tecla:#1f2937;--amarelo:#facc15;--bd:#9ca3af}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{font-size:calc(16px*var(--fs,1))}
+body{margin:0;height:100dvh;display:flex;flex-direction:column;font-family:system-ui,"Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--ink);overflow:hidden;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+button{font:inherit;cursor:pointer;touch-action:manipulation}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:4px solid var(--azul);outline-offset:2px}
+header{padding:.5rem 1rem;text-align:center;background:#111827;color:#fff;user-select:none;flex-shrink:0}
+header b{font-size:1.05rem;letter-spacing:.04em}
+header span{display:block;font-size:.85rem;color:#d1d5db}
+main{flex:1;min-height:0;overflow:auto}
+.sc{display:none;min-height:100%}.sc.on{display:flex}
+/* botões */
+.btn{border:0;border-radius:.9rem;padding:1rem 1.4rem;font-size:1.2rem;font-weight:800;color:#fff;background:#374151;min-height:3.5rem}
+.btn.ok{background:var(--ok)}.btn.bad{background:var(--bad)}.btn.warn{background:var(--warn)}.btn.azul{background:var(--azul)}
+.btn.sm{font-size:1rem;padding:.55rem .9rem;min-height:2.75rem;border-radius:.6rem}
+.btn:active{transform:scale(.97)}
+/* início */
+#home,#end{flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:1.1rem;padding:1.5rem}
+#home h1{margin:0;font-size:clamp(1.8rem,6vw,3rem)}
+#home p{margin:0;font-size:1.3rem;max-width:34rem;line-height:1.5}
+#home .big{font-size:clamp(1.5rem,4vw,2.2rem);padding:1.3rem 2.5rem;min-width:min(90%,26rem)}
+.row{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center}
+.tag{background:var(--amarelo);color:#111;padding:.25rem .9rem;border-radius:2rem;font-weight:800;font-size:1.1rem}
+/* votação */
+#vote{flex-direction:column;gap:.7rem;padding:.7rem}
+@media (min-aspect-ratio:11/10){#vote{flex-direction:row}#vote>*{flex:1}}
+.visor{background:#fff;border:4px solid #111;border-radius:1rem;padding:.9rem;display:flex;flex-direction:column;gap:.6rem}
+.cargo{font-size:1.35rem;font-weight:900;text-align:center}
+.instr{font-size:1.3rem;font-weight:700;text-align:center;min-height:3.6rem;display:flex;align-items:center;justify-content:center;line-height:1.3;border-radius:.6rem;padding:.3rem}
+.instr.ok{background:#dcfce7;color:#14532d}.instr.erro{background:#fee2e2;color:#7f1d1d}
+.digitos{display:flex;gap:.6rem;justify-content:center}
+.dg{width:clamp(3.2rem,11vmin,5rem);aspect-ratio:3/4;border:4px solid #111;border-radius:.6rem;display:flex;align-items:center;justify-content:center;font-size:clamp(2.2rem,8vmin,3.6rem);font-weight:900;font-family:Consolas,monospace}
+.dg.vz{border-color:var(--bd);color:#d1d5db}
+.painel{display:flex;gap:1rem;align-items:center;border:3px solid #111;border-radius:.8rem;padding:.7rem;min-height:11rem}
+.painel.oculto{visibility:hidden}
+.fotos{display:flex;gap:.6rem}
+.fotos figure{margin:0;text-align:center;font-size:.9rem;font-weight:700}
+.fotos .f{width:clamp(5.5rem,16vmin,8rem);aspect-ratio:300/380;background:#e5e7eb;border-radius:.4rem;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:#4b5563}
+.fotos img{width:100%;height:100%;object-fit:cover}
+.fotos figure.vice .f{width:clamp(4rem,11vmin,5.5rem)}
+.info .n{font-size:2.2rem;font-weight:900;font-family:Consolas,monospace}
+.info .nm{font-size:1.5rem;font-weight:800;line-height:1.2;overflow-wrap:anywhere}
+.info .vc{font-size:1.2rem;margin-top:.3rem;overflow-wrap:anywhere}
+.teclado{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(4,minmax(3.6rem,1fr)) minmax(4.2rem,1.25fr);gap:.55rem;background:#111827;padding:.7rem;border-radius:1rem;min-height:22rem}
+.k{border:0;border-radius:.7rem;background:var(--tecla);color:#fff;font-size:clamp(1.8rem,6vmin,2.6rem);font-weight:900;box-shadow:0 4px 0 #000;border:2px solid #4b5563}
+.k:active{transform:translateY(3px);box-shadow:none}
+.k0{grid-column:2}
+.kf{font-size:clamp(1rem,3.2vmin,1.5rem);letter-spacing:.02em;border:0;box-shadow:0 4px 0 rgba(0,0,0,.5)}
+.kb{background:#fff;color:#111;border:3px solid #111}.kc{background:#c2410c}.kk{background:var(--ok)}
+.kk:disabled{background:#6b7280;color:#d1d5db;cursor:not-allowed}
+/* fim */
+#end{background:#fff}
+#end .fim{font-size:clamp(5rem,22vw,11rem);font-weight:900;letter-spacing:.1em;line-height:1}
+#end p{font-size:1.5rem;margin:0}
+/* diálogo */
+dialog{border:4px solid #111;border-radius:1rem;padding:1.5rem;max-width:min(32rem,92vw);width:100%;text-align:center}
+dialog::backdrop{background:rgba(0,0,0,.75)}
+dialog h3{margin:0 0 .6rem;font-size:1.7rem}
+dialog p{margin:0 0 1.2rem;font-size:1.25rem;line-height:1.4}
+dialog .row .btn{flex:1;min-width:8rem}
+.toast{position:fixed;left:50%;bottom:1.2rem;transform:translateX(-50%);background:#111827;color:#fff;padding:.8rem 1.3rem;border-radius:.7rem;font-size:1.1rem;z-index:99;max-width:92vw;text-align:center}
+/* admin */
+#login,#adm{flex-direction:column;padding:1rem;gap:.9rem;max-width:56rem;margin:0 auto;width:100%}
+#login{justify-content:center;align-items:center;text-align:center}
+#login input{max-width:20rem}
+.tabs{display:flex;gap:.4rem;flex-wrap:wrap}
+.tabs .btn{background:#4b5563}.tabs .btn.on{background:var(--azul)}
+.card{background:#fff;border:2px solid #d1d5db;border-radius:.9rem;padding:1rem}
+.card h2{margin:0 0 .6rem;font-size:1.3rem}
+.card p{margin:.3rem 0;font-size:1rem;line-height:1.45}
+label{display:block;font-weight:700;margin:.7rem 0 .25rem;font-size:1rem}
+input[type=text],input[type=password],input[type=number]{width:100%;padding:.8rem;border:2px solid #6b7280;border-radius:.6rem;font-size:1.1rem}
+input[type=file]{font-size:1rem;max-width:100%}
+.item{display:flex;gap:.7rem;align-items:center;flex-wrap:wrap;border:2px solid #e5e7eb;border-radius:.7rem;padding:.6rem;margin-top:.6rem}
+.item img{width:44px;height:56px;object-fit:cover;border-radius:.3rem;background:#e5e7eb}
+.item .d{flex:1;min-width:10rem;font-size:1.05rem}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(10rem,1fr));gap:.6rem}
+.stat{background:#f3f4f6;border-radius:.7rem;padding:.8rem;text-align:center}
+.stat b{display:block;font-size:2rem}
+.bar{height:.9rem;background:#e5e7eb;border-radius:.5rem;overflow:hidden;margin-top:.25rem}.bar i{display:block;height:100%;background:var(--azul)}
+.res{margin:.7rem 0;font-size:1.1rem}.res .l{display:flex;justify-content:space-between;gap:.5rem;font-weight:700}
+.prev img{width:60px;height:76px;object-fit:cover;border-radius:.3rem;margin-top:.4rem}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
-
-<div id="aviso-girar">
-  <div class="rotar-icone">🔄</div>
-  <p>Para uma visualização maior e mais confortável,<br>gire o aparelho na posição horizontal.</p>
-  <button class="btn btn-secundario" onclick="document.getElementById('aviso-girar').classList.add('ignorado')">Continuar assim mesmo</button>
-</div>
-
-<div id="app">
-  <header class="topo" id="header-topo" onclick="cliqueSecretoHeader()">
-    <div>
-      <span class="titulo">SIMULADOR DE URNA ELETRÔNICA</span>
-      <span class="subtitulo">PROJETO EDUCACIONAL</span>
+<header id="hd"><b>SIMULADOR DE URNA ELETRÔNICA</b><span>Projeto educacional · sem vínculo com a Justiça Eleitoral</span></header>
+<main>
+  <section id="home" class="sc on">
+    <span class="tag">2º TURNO</span>
+    <h1>Eleição para Presidente</h1>
+    <p>Este é um simulador educacional. Nenhum voto aqui tem validade oficial.</p>
+    <button class="btn ok big" data-a="iniciar">INICIAR VOTAÇÃO</button>
+    <div class="row">
+      <button class="btn sm" data-a="fonte" data-i="-1" aria-label="Diminuir letras">A−</button>
+      <button class="btn sm" data-a="fonte" data-i="1" aria-label="Aumentar letras">A+ Letras maiores</button>
+      <button class="btn sm" data-a="tela">⛶ Tela cheia</button>
     </div>
-    <div class="aviso">Simulação sem qualquer vínculo com a Justiça Eleitoral ou o TSE.</div>
-  </header>
+  </section>
 
-  <!-- TELA INICIAL -->
-  <div id="tela-inicial" class="tela">
-    <div class="icone-urna">🗳️</div>
-    <h2>Bem-vindo(a)</h2>
-    <p>Este é um simulador educacional de urna eletrônica.<br>Nenhum voto aqui tem validade oficial.</p>
-    <button class="btn btn-primario btn-lg btn-full" onclick="iniciarVotacao()">INICIAR VOTAÇÃO</button>
-    <button class="btn btn-contorno btn-full" onclick="tentarModoHorizontal()" style="margin-top:10px;">⛶ Tela cheia</button>
-    <p id="dica-ios-tela-cheia" class="hidden" style="font-size:10.5px;color:#8a94a0;max-width:280px;margin-top:8px;">📲 iPhone/iPad: pra esconder TODOS os menus do Safari, toque em Compartilhar → "Adicionar à Tela de Início" e abra o simulador pelo ícone.</p>
-    <button class="btn-link" onclick="abrirNovaVotacao()">Reiniciar sessão atual</button>
-    <button class="btn-link" onclick="acessoViaAtalhoSecreto=false; abrirLoginAdmin();">Área administrativa</button>
-  </div>
-
-  <!-- TELA VOTACAO -->
-  <div id="tela-votacao" class="tela hidden" style="position:relative;">
-    <div class="rotulo-treinamento">Treinamento</div>
-    <div class="trilha-cargos" id="trilha-cargos"></div>
-
-    <div class="cargo-label">
-      <div class="nome-cargo" id="lbl-cargo">—</div>
-      <div class="progresso" id="lbl-progresso">—</div>
+  <section id="vote" class="sc">
+    <div class="visor">
+      <div class="cargo">PRESIDENTE E VICE-PRESIDENTE · 2º TURNO</div>
+      <div class="instr" id="instr" aria-live="polite"></div>
+      <div class="digitos" id="dgs"></div>
+      <div class="painel oculto" id="painel"></div>
     </div>
+    <div class="teclado" id="tec"></div>
+  </section>
 
-    <div class="caixas-digitos" id="caixas-digitos"></div>
-    <div class="msg-numero-errado" id="msg-numero-errado"></div>
+  <section id="end" class="sc">
+    <div class="fim">FIM</div>
+    <p><b>Voto registrado.</b> Obrigado por participar!</p>
+  </section>
 
-    <div class="painel-candidato oculto" id="painel-candidato">
-      <div class="foto-wrap" id="foto-candidato-wrap"></div>
-      <div class="info" id="info-candidato"></div>
-    </div>
+  <section id="login" class="sc">
+    <div style="font-size:3rem">🔒</div>
+    <h2 id="lg-t">Área administrativa</h2>
+    <p id="lg-p" style="font-size:1.1rem;margin:0"></p>
+    <input type="password" id="lg-pw" placeholder="Senha" autocomplete="current-password">
+    <div class="row"><button class="btn" data-a="inicio">Voltar</button><button class="btn ok" data-a="entrar">Entrar</button></div>
+  </section>
 
-    <div class="teclado-fisico" id="teclado"></div>
-
-    <div id="overlay-votacao"></div>
-  </div>
-
-  <!-- TELA FIM -->
-  <div id="tela-fim" class="tela hidden">
-    <div class="fim-topo">
-      <span id="fim-relogio">—</span>
-      <span class="fim-treino">TREINAMENTO</span>
-      <span class="bateria"><span class="corpo"><span></span><span></span><span></span></span><span class="ponta"></span></span>
-    </div>
-    <div class="fim-meio">
-      <div class="palavra-fim">FIM</div>
-      <div class="fim-votou">VOTOU</div>
-    </div>
-    <div class="fim-rodape">
-      <span>Simulador Educacional</span>
-      <span>Zona: 0001</span>
-      <span>Seção: 0001</span>
-    </div>
-  </div>
-
-  <!-- LOGIN ADMIN -->
-  <div id="tela-admin-login" class="tela hidden" style="align-items:center; justify-content:center; text-align:center; gap:12px; touch-action:pan-y; user-select:text; -webkit-user-select:text;">
-    <div style="font-size:40px;">🔒</div>
-    <h2 style="margin:0; font-size:16px;">Área Administrativa</h2>
-    <input type="password" id="input-senha-admin" placeholder="Senha" style="max-width:220px;">
-    <div id="erro-senha" style="color:#ff8a7a; font-size:11.5px; display:none;">Senha incorreta.</div>
-    <div class="row" style="max-width:260px;">
-      <button class="btn btn-secundario" onclick="voltarInicio()">Voltar</button>
-      <button class="btn btn-primario" onclick="tentarLoginAdmin()">Entrar</button>
-    </div>
-    <div style="font-size:10px; color:#5c6773;">Senha padrão inicial: admin2026</div>
-  </div>
-
-  <!-- PAINEL ADMIN -->
-  <div id="tela-admin" class="tela hidden" style="padding:0; touch-action:pan-y; -webkit-user-select:text; user-select:text;">
-    <div class="admin-header">
-      <h2>Painel Administrativo</h2>
-      <button class="btn-link" onclick="sairAdmin()">Sair</button>
-    </div>
-    <div class="tabs" id="admin-tabs"></div>
-    <div class="tab-conteudo" id="admin-conteudo"></div>
-    <div class="rodape-admin">
-      <button class="btn-link" onclick="voltarInicio()">← Voltar ao simulador</button>
-    </div>
-  </div>
-</div>
-
-<!-- Firebase (Realtime Database) — credenciais e ID da urna em firebase-config.js.
-     Se o arquivo não existir ou não estiver preenchido, o simulador continua
-     funcionando 100% offline via localStorage, sem travar. -->
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
-<script src="firebase-config.js"></script>
+  <section id="adm" class="sc">
+    <div class="row" style="justify-content:space-between"><b style="font-size:1.4rem">Painel administrativo</b><button class="btn sm" data-a="inicio">Sair</button></div>
+    <div class="tabs" id="tabs"></div>
+    <div id="adm-c"></div>
+  </section>
+</main>
+<dialog id="dlg"><h3></h3><p></p><div class="row"></div></dialog>
 
 <script>
-/* ======================================================================
-   SIMULADOR DE URNA ELETRÔNICA — PROJETO EDUCACIONAL
-   WF Tecnology
-   ====================================================================== */
+(()=>{
+'use strict';
+/* ====================== ESTADO E PERSISTÊNCIA ====================== */
+const K={cand:'urna_t2_candidatos',cfg:'urna_t2_config',res:'urna_t2_resultados',old:'urna_candidatos_v1'};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const load=(k,d)=>{try{const r=localStorage.getItem(k);return r?JSON.parse(r):d}catch{return d}};
+const imgOk=s=>typeof s==='string'&&/^data:image\/(jpeg|png);base64,/.test(s)?s:null;
 
-const LS_KEYS = {
-  candidatos: 'urna_candidatos_v1',
-  config:     'urna_config_v1',
-  resultados: 'urna_resultados_v1',
-  sessao:     'urna_sessao_v1'
+const S={
+  cand:load(K.cand,null),
+  cfg:Object.assign({digitos:2,som:true,fs:1,pw:null},load(K.cfg,{})),
+  res:Object.assign({votos:{BRANCO:0,NULO:0}},load(K.res,{}))
 };
-
-// Metadados fixos das ETAPAS de votação. Os dois turnos de Senador
-// apontam para a MESMA lista de candidatos ('senador').
-const CARGOS_META = {
-  'dep-federal':   { label: 'DEPUTADO FEDERAL',              labelCurto:'Deputado Federal',   majoritario:false, dadosCargoId:'dep-federal' },
-  'dep-estadual':  { label: 'DEPUTADO ESTADUAL',             labelCurto:'Deputado Estadual',  majoritario:false, dadosCargoId:'dep-estadual' },
-  'senador-1':      { label: 'SENADOR — 1º VOTO',            labelCurto:'Senador — 1ª vaga',  majoritario:false, dadosCargoId:'senador' },
-  'senador-2':      { label: 'SENADOR — 2º VOTO',            labelCurto:'Senador — 2ª vaga',  majoritario:false, dadosCargoId:'senador' },
-  'governador':     { label: 'GOVERNADOR E VICE-GOVERNADOR', labelCurto:'Governador',          majoritario:true,  dadosCargoId:'governador' },
-  'presidente':     { label: 'PRESIDENTE E VICE-PRESIDENTE', labelCurto:'Presidente',          majoritario:true,  dadosCargoId:'presidente' }
-};
-
-function candidatosPadrao(){
-  return {
-    'dep-federal': [
-      { numero:'5511', nome:'Charles Fernandes', foto:null, ativo:true }
-    ],
-    'dep-estadual': [
-      { numero:'55555', nome:'Ivana Bastos', foto:null, ativo:true },
-      { numero:'70111', nome:'Felipe Duarte', foto:null, ativo:true }
-    ],
-    'senador': [
-      { numero:'131', nome:'Rui Costa', foto:null, ativo:true },
-      { numero:'130', nome:'Jaques Wagner', foto:null, ativo:true }
-    ],
-    'governador': [
-      { numero:'13', nome:'Geronimo', vice:'Geraldinho', foto:null, fotoVice:null, ativo:true }
-    ],
-    'presidente': [
-      { numero:'13', nome:'Lula', vice:'Geraldo Alckmin', foto:null, fotoVice:null, ativo:true }
-    ]
-  };
+if(!S.cand){ // migra presidente do sistema do 1º turno, se existir
+  const o=load(K.old,null);
+  S.cand=(o&&Array.isArray(o.presidente)&&o.presidente.length)?o.presidente:[{numero:'13',nome:'Candidato A',vice:'Vice A',foto:null,fotoVice:null,ativo:true},{numero:'22',nome:'Candidato B',vice:'Vice B',foto:null,fotoVice:null,ativo:true}];
 }
-
-function configPadrao(){
-  return {
-    ordem: ['dep-federal','dep-estadual','senador-1','senador-2','governador','presidente'],
-    digitos: {
-      'dep-federal':4, 'dep-estadual':5, 'senador':3, 'governador':2, 'presidente':2
-    },
-    senhaAdmin: 'admin2026',
-    somAtivado: true
-  };
-}
-
-function carregar(chave, padraoFn){
+function persist(){
   try{
-    const raw = localStorage.getItem(chave);
-    if(!raw) return padraoFn();
-    return JSON.parse(raw);
-  }catch(e){ return padraoFn(); }
-}
-function salvar(chave, obj){
-  try{
-    localStorage.setItem(chave, JSON.stringify(obj));
+    localStorage.setItem(K.cand,JSON.stringify(S.cand));
+    localStorage.setItem(K.cfg,JSON.stringify(S.cfg));
+    localStorage.setItem(K.res,JSON.stringify(S.res));
     return true;
-  }catch(e){
-    console.error('Falha ao salvar em localStorage:', chave, e);
-    return false;
-  }
+  }catch{toast('⚠️ Não foi possível salvar (armazenamento cheio). Use fotos menores.');return false}
 }
+persist();
+const totalVotos=()=>Object.values(S.res.votos).reduce((a,b)=>a+b,0);
 
-let candidatos = carregar(LS_KEYS.candidatos, candidatosPadrao);
-let config     = carregar(LS_KEYS.config, configPadrao);
-let resultados = carregar(LS_KEYS.resultados, () => ({}));
-let sessao     = carregar(LS_KEYS.sessao, () => ({ ativa:false, indiceCargo:0, totalVotantes:0, escolhasSenado:[] }));
-if(!sessao.escolhasSenado) sessao.escolhasSenado = [];
+/* ====================== UTILIDADES ====================== */
+let toastT;
+function toast(m){document.querySelector('.toast')?.remove();const e=document.createElement('div');e.className='toast';e.setAttribute('role','status');e.textContent=m;document.body.appendChild(e);clearTimeout(toastT);toastT=setTimeout(()=>e.remove(),3000)}
+function aplicarFonte(){document.documentElement.style.setProperty('--fs',S.cfg.fs)}
+aplicarFonte();
 
-function persistirTudo(){
-  const okC = salvar(LS_KEYS.candidatos, candidatos);
-  const okG = salvar(LS_KEYS.config, config);
-  const okR = salvar(LS_KEYS.resultados, resultados);
-  const okS = salvar(LS_KEYS.sessao, sessao);
-  if(!(okC && okG && okR && okS)){
-    toast('⚠️ Não foi possível salvar (armazenamento cheio). Use fotos menores.');
-  }
-  fbEnviarCandidatos();
-  fbEnviarConfig();
-  return okC && okG && okR && okS;
-}
-
-// Migra dados salvos no formato antigo (senador-1 / senador-2 separados)
-// para a lista única compartilhada 'senador'. Roda uma única vez.
-function migrarDadosSenado(){
-  let mudou = false;
-  if(candidatos['senador-1'] || candidatos['senador-2']){
-    if(!candidatos['senador'] || candidatos['senador'].length===0){
-      const vistos = new Set();
-      const combinados = [];
-      (candidatos['senador-1']||[]).concat(candidatos['senador-2']||[]).forEach(c=>{
-        if(!vistos.has(c.numero)){ vistos.add(c.numero); combinados.push(c); }
-      });
-      candidatos['senador'] = combinados;
-    }
-    delete candidatos['senador-1'];
-    delete candidatos['senador-2'];
-    mudou = true;
-  }
-  if(config.digitos && (config.digitos['senador-1']!=null || config.digitos['senador-2']!=null)){
-    if(config.digitos['senador']==null){
-      config.digitos['senador'] = config.digitos['senador-1'] || config.digitos['senador-2'] || 3;
-    }
-    delete config.digitos['senador-1'];
-    delete config.digitos['senador-2'];
-    mudou = true;
-  }
-  if(mudou) persistirTudo();
-}
-migrarDadosSenado();
-
-// garante estrutura de resultados para todas as ETAPAS de votação
-function garantirResultados(){
-  config.ordem.forEach(cargoId=>{
-    if(!resultados[cargoId]) resultados[cargoId] = { BRANCO:0, NULO:0 };
+function perguntar(titulo,texto,{ok='CONFIRMA',cancel='CORRIGE',cls='ok'}={}){
+  return new Promise(res=>{
+    const d=$('#dlg');d.querySelector('h3').textContent=titulo;d.querySelector('p').textContent=texto;
+    const r=d.querySelector('.row');r.innerHTML='';
+    const mk=(t,c,v)=>{const b=document.createElement('button');b.className='btn '+c;b.textContent=t;b.onclick=()=>{d.close();res(v)};r.appendChild(b)};
+    if(cancel)mk(cancel,'warn',false);mk(ok,cls,true);
+    d.oncancel=()=>res(false);
+    d.showModal();
   });
 }
-garantirResultados();
+let ac;
+function beep(f,ms,t='sine',v=.12){
+  if(!S.cfg.som)return;
+  try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();
+    const o=ac.createOscillator(),g=ac.createGain(),n=ac.currentTime;o.type=t;o.frequency.value=f;
+    g.gain.setValueAtTime(v,n);g.gain.exponentialRampToValueAtTime(.0001,n+ms/1000);o.connect(g);g.connect(ac.destination);o.start(n);o.stop(n+ms/1000+.03)}catch{}
+}
+const SOM={tecla:()=>beep(880,70,'square',.05),ok:()=>beep(1046,100),erro:()=>beep(180,260,'sawtooth',.07),
+  confirma:()=>{beep(660,90,'square',.06);setTimeout(()=>beep(990,140,'square',.06),90)},
+  fim:()=>[523,659,784,1046].forEach((f,i)=>setTimeout(()=>beep(f,i==3?500:140,'triangle',.1),i*150))};
 
-/* ================= SINCRONIZAÇÃO COM FIREBASE (Realtime Database) =================
-   O simulador continua funcionando 100% offline via localStorage — o Firebase é
-   apenas uma camada extra de sincronização, e nunca impede o uso do app.
-   ==================================================================== */
-let fbDb = null;
-let fbPronto = false;
-let fbAplicandoRemoto = false;
-
-let fbStatus = 'desativado';
-let fbAvisoErroMostrado = false;
-
-function fbInit(){
-  try{
-    if(typeof firebase === 'undefined' || typeof firebaseConfig === 'undefined'){ fbStatus='desativado'; return; }
-    if(!firebaseConfig.apiKey || firebaseConfig.apiKey.indexOf('SUA_API_KEY') === 0){ fbStatus='desativado'; return; }
-
-    /* CORREÇÃO DE BUG: o Realtime Database NÃO funciona sem databaseURL.
-       Se firebase-config.js não trouxer o campo, tentamos derivar a URL
-       padrão a partir do projectId. Projetos criados em regiões mais
-       novas usam "<projeto>-default-rtdb.<regiao>.firebasedatabase.app" —
-       nesses casos o campo databaseURL do arquivo de configuração é
-       OBRIGATÓRIO (o Firebase exibe essa URL no topo do painel do
-       Realtime Database). */
-    if(!firebaseConfig.databaseURL){
-      if(firebaseConfig.projectId){
-        firebaseConfig.databaseURL = 'https://' + firebaseConfig.projectId + '-default-rtdb.firebaseio.com';
-        console.warn('firebase-config.js sem databaseURL — usando URL derivada: ' + firebaseConfig.databaseURL +
-          '. Se a sincronização falhar, copie a URL exata mostrada no Console do Firebase.');
-      } else {
-        fbStatus = 'erro';
-        fbAtualizarIndicador();
-        return;
-      }
-    }
-
-    fbStatus = 'conectando';
-    firebase.initializeApp(firebaseConfig);
-    fbDb = firebase.database();
-    fbPronto = true;
-    fbDb.ref('.info/connected').on('value', snap=>{
-      fbStatus = snap.val()===true ? 'ok' : 'conectando';
-      fbAtualizarIndicador();
-    });
-    fbEscutarRemoto();
-  }catch(e){
-    console.error('Firebase indisponível — o simulador seguirá funcionando apenas com armazenamento local.', e);
-    fbPronto = false;
-    fbStatus = 'erro';
-  }
-  fbAtualizarIndicador();
-}
-function fbRef(caminho){
-  return fbDb.ref('urnas/' + (typeof URNA_ID!=='undefined' && URNA_ID ? URNA_ID : 'padrao') + '/' + caminho);
-}
-function fbTelaAdminAberta(){
-  const el = document.getElementById('tela-admin');
-  return !!(el && !el.classList.contains('hidden'));
-}
-/* CORREÇÃO DE BUG: não re-renderiza o painel admin por cima de quem está
-   digitando (o Firebase notifica de tempos em tempos e apagava os campos). */
-function fbAdminOcupado(){
-  const ae = document.activeElement;
-  if(ae && ae.closest && ae.closest('#admin-conteudo')) return true;
-  return !!(document.querySelector('#admin-conteudo input[type=file]:not([value=""])'));
-}
-function fbAtualizarIndicador(){
-  if(!fbTelaAdminAberta() || abaAtual!=='config') return;
-  if(fbAdminOcupado()) return;
-  abrirAbaAdmin('config');
-}
-function fbAvisarFalhaSync(){
-  fbStatus = 'erro';
-  if(!fbAvisoErroMostrado){
-    fbAvisoErroMostrado = true;
-    toast('⚠️ Falha ao sincronizar com o Firebase — os dados estão salvos só neste navegador.');
-    setTimeout(()=>{ fbAvisoErroMostrado = false; }, 15000);
-  }
-  fbAtualizarIndicador();
-}
-function fbEscutarRemoto(){
-  fbRef('candidatos').on('value', snap=>{
-    const val = snap.val();
-    if(!val) return;
-    fbAplicandoRemoto = true;
-    candidatos = val;
-    salvar(LS_KEYS.candidatos, candidatos);
-    if(fbTelaAdminAberta() && !edicaoEmAndamento && !fbAdminOcupado()) abrirAbaAdmin(abaAtual);
-    fbAplicandoRemoto = false;
-  });
-  fbRef('config').on('value', snap=>{
-    const val = snap.val();
-    if(!val) return;
-    fbAplicandoRemoto = true;
-    config = val;
-    salvar(LS_KEYS.config, config);
-    garantirResultados();
-    if(fbTelaAdminAberta() && !fbAdminOcupado()) abrirAbaAdmin(abaAtual);
-    fbAplicandoRemoto = false;
-  });
-  fbRef('resultados').on('value', snap=>{
-    const val = snap.val();
-    if(!val) return;
-    resultados = val;
-    garantirResultados();
-    salvar(LS_KEYS.resultados, resultados);
-    if(fbTelaAdminAberta() && abaAtual==='apuracao' && !fbAdminOcupado()) abrirAbaAdmin('apuracao');
-  });
-  fbRef('totalVotantes').on('value', snap=>{
-    const val = snap.val();
-    if(val==null) return;
-    sessao.totalVotantes = val;
-    salvar(LS_KEYS.sessao, sessao);
-    if(fbTelaAdminAberta() && abaAtual==='apuracao' && !fbAdminOcupado()) abrirAbaAdmin('apuracao');
-  });
-}
-function fbEnviarCandidatos(){
-  if(!fbPronto || fbAplicandoRemoto) return;
-  fbRef('candidatos').set(candidatos)
-    .then(()=>{ fbStatus='ok'; })
-    .catch(e=>{ console.error('Falha ao sincronizar candidatos com o Firebase:', e); fbAvisarFalhaSync(); });
-}
-function fbEnviarConfig(){
-  if(!fbPronto || fbAplicandoRemoto) return;
-  fbRef('config').set(config)
-    .then(()=>{ fbStatus='ok'; })
-    .catch(e=>{ console.error('Falha ao sincronizar configurações com o Firebase:', e); fbAvisarFalhaSync(); });
-}
-function fbIncrementarVoto(cargoId, chave){
-  if(!fbPronto) return;
-  fbRef('resultados/'+cargoId+'/'+chave).set(firebase.database.ServerValue.increment(1))
-    .then(()=>{ fbStatus='ok'; })
-    .catch(e=>{ console.error('Falha ao sincronizar voto com o Firebase:', e); fbAvisarFalhaSync(); });
-}
-function fbIncrementarVotante(){
-  if(!fbPronto) return;
-  fbRef('totalVotantes').set(firebase.database.ServerValue.increment(1))
-    .then(()=>{ fbStatus='ok'; })
-    .catch(e=>{ console.error('Falha ao sincronizar total de votantes com o Firebase:', e); fbAvisarFalhaSync(); });
-}
-function fbZerarApuracaoRemota(){
-  if(!fbPronto) return;
-  fbRef('resultados').remove().catch(e=>{ console.error('Falha ao zerar apuração no Firebase:', e); fbAvisarFalhaSync(); });
-  fbRef('totalVotantes').set(0).catch(e=>{ console.error('Falha ao zerar total de votantes no Firebase:', e); fbAvisarFalhaSync(); });
-}
-fbInit();
-
-/* ================= NAVEGAÇÃO ENTRE TELAS ================= */
-function mostrarTela(id){
-  document.querySelectorAll('.tela').forEach(t=>t.classList.add('hidden'));
-  document.getElementById(id).classList.remove('hidden');
-}
-function voltarInicio(){
-  document.getElementById('app').classList.remove('modo-admin');
-  mostrarTela('tela-inicial');
+async function hash(s){
+  if(window.crypto&&crypto.subtle){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('urna2:'+s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+  let h=5381;for(const c of 'urna2:'+s)h=((h<<5)+h+c.charCodeAt(0))|0;return 'f'+h; // fallback p/ file://
 }
 
-/* ================= TELA CHEIA / TRAVAR EM HORIZONTAL =================
-   Nem todo navegador permite forçar a orientação via código — Android/
-   Chrome só permite DEPOIS de entrar em tela cheia, e o Safari do
-   iPhone/iPad não permite de jeito nenhum (limitação do iOS; por isso a
-   dica de instalar o app na Tela de Início). */
-let imersaoTentada = false;
-function tentarModoHorizontal(){
-  imersaoTentada = true;
-  const el = document.documentElement;
-  const pedirTelaCheia = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
-  function travarHorizontal(){
-    try{
-      if(screen.orientation && screen.orientation.lock){
-        screen.orientation.lock('landscape').catch(()=>{});
-      }
-    }catch(e){ /* navegador não suporta */ }
-  }
-  if(pedirTelaCheia){
-    try{
-      const resultado = pedirTelaCheia.call(el);
-      if(resultado && resultado.then) resultado.then(travarHorizontal).catch(travarHorizontal);
-      else travarHorizontal();
-    }catch(e){ travarHorizontal(); }
-  } else {
-    travarHorizontal();
-  }
+/* ====================== NAVEGAÇÃO ====================== */
+let tFim=null;
+function tela(id){document.querySelectorAll('.sc').forEach(s=>s.classList.toggle('on',s.id===id));$('main').scrollTop=0}
+A_inicio();
+function A_inicio(){clearTimeout(tFim);tela('home')}
+
+/* ====================== VOTAÇÃO ====================== */
+let dig='',achado=null,ocupado=false;
+const ativos=()=>S.cand.filter(c=>c.ativo!==false);
+
+function montarTeclado(){
+  const t=$('#tec');t.innerHTML='';
+  for(const n of '1234567890'){const b=document.createElement('button');b.className='k'+(n==='0'?' k0':'');b.textContent=n;b.dataset.a='d';b.dataset.i=n;b.setAttribute('aria-label','Número '+n);t.appendChild(b)}
+  [['kf kb','BRANCO','branco'],['kf kc','CORRIGE','corrige'],['kf kk','CONFIRMA','confirma']].forEach(([c,l,a])=>{
+    const b=document.createElement('button');b.className='k '+c;b.textContent=l;b.dataset.a=a;if(a==='confirma')b.id='bk';t.appendChild(b)});
 }
-
-/* CORREÇÃO/MELHORIA: pede tela cheia no PRIMEIRO toque do usuário.
-   Navegadores exigem um gesto do usuário para liberar fullscreen — por
-   isso não dá para entrar em tela cheia sozinho ao carregar a página.
-   No primeiro toque em qualquer lugar (botão INICIAR, tecla, etc.) a
-   imersão é ativada e o aparelho trava na horizontal, escondendo os
-   menus do navegador. No iOS, o Safari não tem essa API: a saída é
-   instalar o app (dica exibida automaticamente na tela inicial). */
-function pedirImersaoNoPrimeiroToque(){
-  if(!imersaoTentada) tentarModoHorizontal();
+function iniciar(){
+  if(!ativos().length){toast('Nenhum candidato ativo. Cadastre na área administrativa.');return}
+  ocupado=false;dig='';achado=null;montarTeclado();tela('vote');desenhar();
 }
-window.addEventListener('pointerdown', pedirImersaoNoPrimeiroToque, { passive:true });
-window.addEventListener('touchstart', pedirImersaoNoPrimeiroToque, { passive:true });
-
-/* CORREÇÃO DE BUG: ao sair da tela cheia (Esc/back), destrava a
-   orientação — antes ficava preso na horizontal até recarregar. */
-document.addEventListener('fullscreenchange', ()=>{
-  if(!document.fullscreenElement && !document.webkitFullscreenElement){
-    try{ if(screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); }catch(e){}
-  } else {
-    try{ if(screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(()=>{}); }catch(e){}
-  }
-});
-
-/* Se o aparelho for girado para horizontal DEPOIS de já estar em tela
-   cheia, garante a trava de orientação (o giro não conta como gesto,
-   mas como já estamos em fullscreen o lock é permitido). */
-window.addEventListener('orientationchange', ()=>{
-  setTimeout(()=>{
-    if(document.fullscreenElement || document.webkitFullscreenElement){
-      try{ if(screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(()=>{}); }catch(e){}
-    }
-  }, 300);
-});
-
-/* ================= MODO QUIOSQUE — bloqueia pinça com dois dedos =================
-   CORREÇÃO DE BUG: removido o bloqueio de "duplo toque rápido" em JS —
-   ele usava preventDefault no touchend, que CANCELAVA o clique do segundo
-   toque no iOS/Safari: digitar "11" ou "55" rapidamente perdia dígitos.
-   O zoom por duplo-toque agora é controlado só por CSS
-   (touch-action: manipulation / none), que não interfere nos cliques. */
-function elementoPermiteGesto(el){
-  return !!(el && el.closest && el.closest('input, select, textarea, .tab-conteudo'));
-}
-document.addEventListener('gesturestart', e=> e.preventDefault());
-document.addEventListener('gesturechange', e=> e.preventDefault());
-document.addEventListener('touchmove', function(e){
-  if(e.touches.length > 1 && !elementoPermiteGesto(e.target)) e.preventDefault();
-}, { passive:false });
-
-/* ================= FLUXO DE VOTAÇÃO ================= */
-let digitosAtuais = '';
-let candidatoEncontrado = null;
-
-function iniciarVotacao(){
-  tentarModoHorizontal(); /* gesto do usuário → tela cheia + horizontal */
-  if(sessao.ativa){
-    // sessão em andamento — retoma no cargo atual
-  } else {
-    sessao.ativa = true;
-    sessao.indiceCargo = 0;
-    sessao.escolhasSenado = [];
-    persistirTudo();
-  }
-  renderCargoAtual();
-  mostrarTela('tela-votacao');
-}
-
-function abrirNovaVotacao(){
-  if(!confirm('Isso limpa apenas a sessão de votação atual (não apaga candidatos nem resultados já registrados). Deseja continuar?')) return;
-  sessao.ativa = false;
-  sessao.indiceCargo = 0;
-  sessao.escolhasSenado = [];
-  persistirTudo();
-  toast('Sessão atual reiniciada.');
-}
-
-function cargoAtualId(){ return config.ordem[sessao.indiceCargo]; }
-
-function renderCargoAtual(){
-  digitosAtuais = '';
-  candidatoEncontrado = null;
-  const cargoId = cargoAtualId();
-  const meta = CARGOS_META[cargoId];
-
-  document.getElementById('lbl-cargo').textContent = meta.label;
-  document.getElementById('lbl-progresso').textContent =
-    'Etapa ' + (sessao.indiceCargo+1) + ' de ' + config.ordem.length;
-
-  renderTrilhaCargos();
-  atualizarDisplayNumero();
-  document.getElementById('msg-numero-errado').textContent = '';
-  esconderPainelCandidato();
-  renderTeclado();
-  document.getElementById('btn-confirma').disabled = true;
-}
-
-function renderTrilhaCargos(){
-  const wrap = document.getElementById('trilha-cargos');
-  wrap.innerHTML = '';
-  config.ordem.forEach((id,i)=>{
-    if(i>0){
-      const seta = document.createElement('span');
-      seta.className = 'crumb-seta';
-      seta.textContent = '›';
-      wrap.appendChild(seta);
-    }
-    const chip = document.createElement('span');
-    chip.className = 'crumb' + (i===sessao.indiceCargo?' atual':(i<sessao.indiceCargo?' feito':''));
-    chip.textContent = CARGOS_META[id].labelCurto;
-    wrap.appendChild(chip);
-  });
-  const atual = wrap.querySelector('.crumb.atual');
-  if(atual) atual.scrollIntoView({inline:'center', block:'nearest'});
-}
-
-function criarPontosBraille(){
-  const dots = document.createElement('span');
-  dots.className = 'pontos-braille';
-  for(let i=0;i<6;i++) dots.appendChild(document.createElement('span'));
-  return dots;
-}
-
-function renderTeclado(){
-  const wrap = document.getElementById('teclado');
-  wrap.innerHTML = '';
-
-  function criarTeclaNum(digito){
-    const b = document.createElement('button');
-    b.className = 'tecla-num';
-    b.textContent = digito;
-    b.appendChild(criarPontosBraille());
-    b.onclick = ()=> teclaPressionada(digito);
-    return b;
-  }
-  function criarTeclaFuncao(classe, rotulo, onClick, id){
-    const b = document.createElement('button');
-    b.className = 'tecla-funcao ' + classe;
-    if(id) b.id = id;
-    const span = document.createElement('span');
-    span.textContent = rotulo;
-    b.appendChild(span);
-    b.appendChild(criarPontosBraille());
-    if(onClick) b.onclick = onClick;
-    return b;
-  }
-
-  for(let n=1; n<=9; n++) wrap.appendChild(criarTeclaNum(String(n)));
-  wrap.appendChild(criarTeclaNum('0'));
-  wrap.appendChild(criarTeclaFuncao('tecla-branco', 'BRANCO', votoBranco));
-  wrap.appendChild(criarTeclaFuncao('tecla-corrige', 'CORRIGE', corrigeDigitacao));
-  const btnConfirma = criarTeclaFuncao('tecla-confirma', 'CONFIRMA', tentarConfirmar, 'btn-confirma');
-  btnConfirma.disabled = true;
-  wrap.appendChild(btnConfirma);
-}
-
-/* ================= SONS DE VOTAÇÃO ================= */
-// Som real (fim.mp3) tocado ao final da votação, embutido em base64 —
-// mantém o arquivo único, sem depender de outro arquivo publicado junto.
-const SOM_FIM_VOTACAO = "data:audio/mpeg;base64,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qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//uyZAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAETEFNRTMuMTAxIChiZXRhIDIpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpMQU1FMy4xMDEgKGJldGEgMimqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq";
-let audioFimEl = null;
-function tocarSomFim(){
-  if(config.somAtivado===false) return;
-  try{
-    if(!audioFimEl){ audioFimEl = new Audio(SOM_FIM_VOTACAO); }
-    audioFimEl.currentTime = 0;
-    audioFimEl.play().catch(()=>{
-      // se o navegador bloquear o áudio por algum motivo, toca o
-      // "beep" de reserva pra não ficar em silêncio total
-      beep(523, 120, 'triangle', 0.07);
-      setTimeout(()=>beep(659, 120, 'triangle', 0.07), 130);
-      setTimeout(()=>beep(784, 240, 'triangle', 0.07), 260);
-    });
-  }catch(e){}
-}
-
-let audioCtx = null;
-function getAudioCtx(){
-  if(!audioCtx){
-    try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ audioCtx = null; }
-  }
-  if(audioCtx && audioCtx.state==='suspended'){ audioCtx.resume(); }
-  return audioCtx;
-}
-function beep(freq, duracaoMs, tipoOnda, volume){
-  if(config.somAtivado===false) return;
-  const ctx = getAudioCtx();
-  if(!ctx) return;
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = tipoOnda || 'square';
-  osc.frequency.value = freq;
-  const vol = volume!=null ? volume : 0.06;
-  const now = ctx.currentTime;
-  gain.gain.setValueAtTime(vol, now);
-  gain.gain.exponentialRampToValueAtTime(0.0001, now + duracaoMs/1000);
-  osc.connect(gain); gain.connect(ctx.destination);
-  osc.start(now);
-  osc.stop(now + duracaoMs/1000 + 0.03);
-}
-function tocarSom(tipo){
-  switch(tipo){
-    case 'tecla':      beep(880, 65, 'square', 0.05); break;
-    case 'encontrado': beep(1046, 90, 'sine', 0.05); break;
-    case 'corrige':    beep(300, 130, 'square', 0.06); break;
-    case 'branco':     beep(520, 150, 'triangle', 0.06); break;
-    case 'erro':       beep(180, 260, 'sawtooth', 0.07); break;
-    case 'confirma':
-      beep(660, 90, 'square', 0.06);
-      setTimeout(()=>beep(990, 140, 'square', 0.06), 90);
-      break;
-    case 'fim':
-      tocarSomFim();
-      break;
-  }
-}
-
-function teclaPressionada(t){
-  tocarSom('tecla');
-  const cargoId = cargoAtualId();
-  const maxDigitos = config.digitos[CARGOS_META[cargoId].dadosCargoId] || 5;
-
-  if(digitosAtuais.length < maxDigitos){
-    digitosAtuais += t;
-  }
-  atualizarDisplayNumero();
-
-  if(digitosAtuais.length === maxDigitos){
-    buscarCandidato();
-  } else {
-    esconderPainelCandidato();
-    document.getElementById('btn-confirma').disabled = true;
-  }
-}
-
-function atualizarDisplayNumero(){
-  const cargoId = cargoAtualId();
-  const maxDigitos = config.digitos[CARGOS_META[cargoId].dadosCargoId] || 5;
-  const wrap = document.getElementById('caixas-digitos');
-  wrap.innerHTML = '';
-  for(let i=0;i<maxDigitos;i++){
-    const caixa = document.createElement('div');
-    const d = digitosAtuais[i];
-    caixa.className = 'caixa-digito ' + (d!=null ? 'preenchida' : 'vazia');
-    caixa.textContent = d!=null ? d : '0';
-    wrap.appendChild(caixa);
-  }
-}
-
-let motivoInvalido = 'NÚMERO NÃO ENCONTRADO';
-
-function buscarCandidato(){
-  const cargoId = cargoAtualId();
-  const meta = CARGOS_META[cargoId];
-  const dadosId = meta.dadosCargoId;
-  const lista = (candidatos[dadosId]||[]).filter(c=>c.ativo!==false);
-  let achado = lista.find(c=> c.numero === digitosAtuais);
-
-  let duplicadoSenado = false;
-  if(achado && dadosId==='senador' && (sessao.escolhasSenado||[]).includes(digitosAtuais)){
-    duplicadoSenado = true;
-    achado = null;
-  }
-
-  const painel = document.getElementById('painel-candidato');
-  const msgErrado = document.getElementById('msg-numero-errado');
-
+function desenhar(){
+  const n=S.cfg.digitos,g=$('#dgs');g.innerHTML='';
+  for(let i=0;i<n;i++){const d=document.createElement('div');d.className='dg'+(dig[i]==null?' vz':'');d.textContent=dig[i]??'0';g.appendChild(d)}
+  const ins=$('#instr'),p=$('#painel');
+  ins.className='instr';
+  if(dig.length<n){ins.textContent='Digite o número do candidato';p.classList.add('oculto');$('#bk').disabled=true;return}
+  achado=ativos().find(c=>c.numero===dig)||null;
+  $('#bk').disabled=false;p.classList.remove('oculto');
   if(achado){
-    candidatoEncontrado = achado;
-    painel.classList.remove('oculto');
-    msgErrado.textContent = '';
-    const fotoWrap = document.getElementById('foto-candidato-wrap');
-    fotoWrap.innerHTML = achado.foto
-      ? '<img src="'+achado.foto+'">'
-      : '<div class="sem-foto">FOTO NÃO<br>CADASTRADA</div>';
-    fotoWrap.className = 'foto-wrap' + (achado.foto?'':' sem-foto');
-
-    let infoHtml = '<div class="num">'+achado.numero+'</div><div class="nome">'+escapeHtml(achado.nome)+'</div>';
-    if(meta.majoritario && achado.vice){
-      infoHtml += '<div class="vice">Vice: <b>'+escapeHtml(achado.vice)+'</b></div>';
-    }
-    document.getElementById('info-candidato').innerHTML = infoHtml;
-    tocarSom('encontrado');
-  } else {
-    candidatoEncontrado = null;
-    painel.classList.add('oculto');
-    document.getElementById('foto-candidato-wrap').innerHTML = '';
-    motivoInvalido = duplicadoSenado ? 'VOCÊ JÁ VOTOU NESTE CANDIDATO NESTA SESSÃO' : 'NÚMERO ERRADO';
-    msgErrado.textContent = duplicadoSenado ? 'JÁ VOTADO NESTA SESSÃO' : 'NÚMERO ERRADO';
-    tocarSom('erro');
-  }
-  document.getElementById('btn-confirma').disabled = false;
-}
-
-function esconderPainelCandidato(){
-  const painel = document.getElementById('painel-candidato');
-  painel.classList.add('oculto');
-  const msgErrado = document.getElementById('msg-numero-errado');
-  if(msgErrado) msgErrado.textContent = '';
-}
-
-function corrigeDigitacao(){
-  tocarSom('corrige');
-  digitosAtuais = '';
-  candidatoEncontrado = null;
-  atualizarDisplayNumero();
-  esconderPainelCandidato();
-  document.getElementById('btn-confirma').disabled = true;
-  fecharOverlayVotacao();
-}
-
-function tentarConfirmar(){
-  if(candidatoEncontrado){
-    confirmarVotoCandidato();
-  } else {
-    mostrarOverlayNulo();
+    ins.className='instr ok';ins.textContent='Confira os dados e aperte CONFIRMA (verde) para votar';
+    const f=(src,t)=>`<figure class="${t==='VICE'?'vice':''}"><div class="f">${src?`<img src="${src}" alt="Foto de ${esc(t)}">`:'sem foto'}</div>${t}</figure>`;
+    p.innerHTML=`<div class="fotos">${f(achado.foto,'PRESIDENTE')}${achado.vice?f(achado.fotoVice,'VICE'):''}</div>
+      <div class="info"><div class="n">${esc(achado.numero)}</div><div class="nm">${esc(achado.nome)}</div>${achado.vice?`<div class="vc">Vice: <b>${esc(achado.vice)}</b></div>`:''}</div>`;
+    SOM.ok();
+  }else{
+    ins.className='instr erro';ins.textContent='NÚMERO ERRADO. Aperte CORRIGE (laranja) ou CONFIRMA para votar nulo';
+    p.innerHTML='<div class="info"><div class="nm" style="color:#b91c1c">VOTO NULO</div><div class="vc">Este número não pertence a nenhum candidato.</div></div>';
+    SOM.erro();
   }
 }
-
-function confirmarVotoCandidato(){
-  tocarSom('confirma');
-  const cargoId = cargoAtualId();
-  registrarVoto(cargoId, candidatoEncontrado.numero);
-  fecharOverlayVotacao();
-  avancarCargo();
+function digitar(d){
+  if(ocupado)return;SOM.tecla();
+  if(dig.length<S.cfg.digitos){dig+=d;desenhar()}
 }
-
-function votoBranco(){
-  tocarSom('branco');
-  const html = `
-    <div class="overlay-caixa">
-      <h3>VOTO EM BRANCO</h3>
-      <p>Deseja confirmar o voto em branco para este cargo?</p>
-      <div class="linha-btns">
-        <button class="btn btn-secundario" onclick="fecharOverlayVotacao()">CORRIGE</button>
-        <button class="btn btn-primario" onclick="confirmarVotoBranco()">CONFIRMA</button>
-      </div>
-    </div>`;
-  abrirOverlayVotacao(html);
+function corrige(){if(ocupado)return;beep(300,130,'square',.06);dig='';achado=null;desenhar()}
+async function votarEm(chave,titulo,texto,cls){
+  if(ocupado)return;ocupado=true;
+  const sim=await perguntar(titulo,texto,{cls});
+  if(!sim){ocupado=false;return}
+  SOM.confirma();registrar(chave);
 }
-function confirmarVotoBranco(){
-  tocarSom('confirma');
-  const cargoId = cargoAtualId();
-  registrarVoto(cargoId, 'BRANCO');
-  fecharOverlayVotacao();
-  avancarCargo();
+function confirma(){
+  if(ocupado||dig.length<S.cfg.digitos)return;
+  if(achado){ocupado=true;SOM.confirma();registrar(achado.numero)}
+  else votarEm('NULO','VOTO NULO','Deseja confirmar o voto nulo?','bad');
 }
-
-function mostrarOverlayNulo(){
-  tocarSom('erro');
-  const html = `
-    <div class="overlay-caixa">
-      <h3>${motivoInvalido}</h3>
-      <p>Deseja confirmar o voto nulo?</p>
-      <div class="linha-btns">
-        <button class="btn btn-secundario" onclick="fecharOverlayVotacao()">CORRIGE</button>
-        <button class="btn btn-primario" onclick="confirmarVotoNulo()">CONFIRMA</button>
-      </div>
-    </div>`;
-  abrirOverlayVotacao(html);
+function branco(){beep(520,150,'triangle',.06);votarEm('BRANCO','VOTO EM BRANCO','Deseja confirmar o voto em branco?','azul')}
+function registrar(chave){
+  S.res.votos[chave]=(S.res.votos[chave]||0)+1; // um voto = um eleitor (2º turno só tem 1 cargo)
+  persist();SOM.fim();tela('end');
+  clearTimeout(tFim);tFim=setTimeout(()=>{ocupado=false;tela('home')},5000);
 }
-function confirmarVotoNulo(){
-  tocarSom('erro');
-  const cargoId = cargoAtualId();
-  registrarVoto(cargoId, 'NULO');
-  fecharOverlayVotacao();
-  avancarCargo();
-}
-
-function abrirOverlayVotacao(html){
-  const wrap = document.getElementById('overlay-votacao');
-  wrap.innerHTML = '<div class="overlay">'+html+'</div>';
-}
-function fecharOverlayVotacao(){
-  document.getElementById('overlay-votacao').innerHTML = '';
-}
-
-function registrarVoto(cargoId, chave){
-  if(!resultados[cargoId]) resultados[cargoId] = { BRANCO:0, NULO:0 };
-  if(!resultados[cargoId][chave]) resultados[cargoId][chave] = 0;
-  resultados[cargoId][chave] += 1;
-
-  const meta = CARGOS_META[cargoId];
-  if(meta && meta.dadosCargoId==='senador' && chave!=='BRANCO' && chave!=='NULO'){
-    if(!sessao.escolhasSenado) sessao.escolhasSenado = [];
-    sessao.escolhasSenado.push(chave);
-  }
-  persistirTudo();
-  fbIncrementarVoto(cargoId, chave);
-}
-
-function avancarCargo(){
-  sessao.indiceCargo += 1;
-  if(sessao.indiceCargo >= config.ordem.length){
-    finalizarSessao();
-  } else {
-    persistirTudo();
-    renderCargoAtual();
-  }
-}
-
-const DIAS_SEMANA = ['DOM','SEG','TER','QUA','QUI','SEX','SAB'];
-let intervalRelogioFim = null;
-
-function atualizarRelogioFim(){
-  const el = document.getElementById('fim-relogio');
-  if(!el) return;
-  const d = new Date();
-  const pad = n => String(n).padStart(2,'0');
-  el.textContent = DIAS_SEMANA[d.getDay()] + ' ' + pad(d.getDate()) + '/' + pad(d.getMonth()+1) + '/' + d.getFullYear() +
-    ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
-}
-
-function finalizarSessao(){
-  tocarSom('fim');
-  sessao.ativa = false;
-  sessao.indiceCargo = 0;
-  sessao.escolhasSenado = []; /* CORREÇÃO: limpa para não vazar p/ backup */
-  sessao.totalVotantes = (sessao.totalVotantes||0) + 1;
-  persistirTudo();
-  fbIncrementarVotante();
-  mostrarTela('tela-fim');
-  atualizarRelogioFim();
-  clearInterval(intervalRelogioFim);
-  intervalRelogioFim = setInterval(atualizarRelogioFim, 1000);
-  setTimeout(()=>{
-    clearInterval(intervalRelogioFim);
-    mostrarTela('tela-inicial');
-  }, 4500);
-}
-
-function escapeHtml(s){
-  return (s==null ? '' : String(s))
-    .replace(/&/g,'&amp;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;')
-    .replace(/'/g,'&#39;');
-}
-function toast(msg){
-  const velho = document.querySelector('.msg-toast');
-  if(velho) velho.remove();
-  const el = document.createElement('div');
-  el.className = 'msg-toast';
-  el.textContent = msg;
-  document.body.appendChild(el);
-  setTimeout(()=> el.remove(), 2200);
-}
-
-/* ======================================================================
-   ÁREA ADMINISTRATIVA
-   ====================================================================== */
-const SENHA_MESTRA = '05048989';
-
-let contagemCliquesHeader = 0;
-let timerCliquesHeader = null;
-let acessoViaAtalhoSecreto = false;
-
-function cliqueSecretoHeader(){
-  contagemCliquesHeader++;
-  clearTimeout(timerCliquesHeader);
-  timerCliquesHeader = setTimeout(()=>{ contagemCliquesHeader = 0; }, 1800);
-  if(contagemCliquesHeader >= 5){
-    contagemCliquesHeader = 0;
-    acessoViaAtalhoSecreto = true;
-    abrirLoginAdmin();
-  }
-}
-
-function abrirLoginAdmin(){
-  document.getElementById('input-senha-admin').value = '';
-  document.getElementById('erro-senha').style.display = 'none';
-  mostrarTela('tela-admin-login');
-  setTimeout(()=>{ const i=document.getElementById('input-senha-admin'); if(i) i.focus(); }, 150);
-}
-function tentarLoginAdmin(){
-  const val = document.getElementById('input-senha-admin').value;
-  if(val === config.senhaAdmin || val === SENHA_MESTRA){
-    document.getElementById('app').classList.add('modo-admin');
-    mostrarTela('tela-admin');
-    if(acessoViaAtalhoSecreto){
-      abrirAbaAdmin('config');
-    } else {
-      abrirAbaAdmin('candidatos');
-    }
-    acessoViaAtalhoSecreto = false;
-  } else {
-    document.getElementById('erro-senha').style.display = 'block';
-  }
-}
-function sairAdmin(){
-  document.getElementById('app').classList.remove('modo-admin');
-  voltarInicio();
-}
-
-const ABAS_ADMIN = [
-  { id:'candidatos', label:'Candidatos' },
-  { id:'ordem',      label:'Ordem/Dígitos' },
-  { id:'apuracao',   label:'Apuração' },
-  { id:'config',     label:'Configurações' }
-];
-let abaAtual = 'candidatos';
-
-function abrirAbaAdmin(id){
-  abaAtual = id;
-  const tabsWrap = document.getElementById('admin-tabs');
-  tabsWrap.innerHTML = '';
-  ABAS_ADMIN.forEach(a=>{
-    const b = document.createElement('button');
-    b.className = 'tab-btn' + (a.id===id?' ativo':'');
-    b.textContent = a.label;
-    b.onclick = ()=> abrirAbaAdmin(a.id);
-    tabsWrap.appendChild(b);
-  });
-  const conteudo = document.getElementById('admin-conteudo');
-  if(id==='candidatos') conteudo.innerHTML = renderAbaCandidatos();
-  if(id==='ordem')      conteudo.innerHTML = renderAbaOrdem();
-  if(id==='apuracao')   conteudo.innerHTML = renderAbaApuracao();
-  if(id==='config')     conteudo.innerHTML = renderAbaConfig();
-}
-
-/* ---------- ABA CANDIDATOS ---------- */
-let cargoSelecionadoAdmin = 'dep-federal';
-
-function listaCargosAdmin(){
-  const vistos = new Set();
-  const resultado = [];
-  config.ordem.forEach(id=>{
-    const meta = CARGOS_META[id];
-    const key = meta.dadosCargoId;
-    if(!vistos.has(key)){
-      vistos.add(key);
-      resultado.push({
-        id: key,
-        label: key==='senador' ? 'SENADOR (candidatos válidos para as 2 vagas)' : meta.label,
-        majoritario: meta.majoritario
-      });
-    }
-  });
-  return resultado;
-}
-
-function renderAbaCandidatos(){
-  const listaCargos = listaCargosAdmin();
-  let opcoesCargo = listaCargos.map(c=>
-    `<option value="${c.id}" ${c.id===cargoSelecionadoAdmin?'selected':''}>${c.label}</option>`
-  ).join('');
-
-  const meta = listaCargos.find(c=>c.id===cargoSelecionadoAdmin) || listaCargos[0];
-  const lista = candidatos[cargoSelecionadoAdmin] || [];
-
-  let itensHtml = lista.map((c,i)=>{
-    const inativo = c.ativo===false;
-    return `
-      <div class="item-cand">
-        <img class="mini-foto" src="${c.foto || fotoPlaceholder()}">
-        <div class="dados">
-          <span class="n">${c.numero}</span> — ${escapeHtml(c.nome)}
-          ${meta.majoritario && c.vice ? '<br><span style="color:#a9b7c4;">Vice: '+escapeHtml(c.vice)+'</span>' : ''}
-          ${inativo ? '<br><span class="inativo-tag">INATIVO</span>' : ''}
-        </div>
-        <div class="btns">
-          <button style="background:#2d6a9f;" onclick="editarCandidato('${cargoSelecionadoAdmin}',${i})">Editar</button>
-          <button style="background:${inativo?'#1e8449':'#e08e0b'};" onclick="toggleAtivoCandidato('${cargoSelecionadoAdmin}',${i})">${inativo?'Ativar':'Desativar'}</button>
-          <button style="background:#c0392b;" onclick="excluirCandidato('${cargoSelecionadoAdmin}',${i})">Excluir</button>
-        </div>
-      </div>`;
-  }).join('') || '<p style="font-size:12px;color:#7f8c99;">Nenhum candidato cadastrado para este cargo.</p>';
-
-  const notaSenado = cargoSelecionadoAdmin==='senador'
-    ? '<p style="font-size:10.5px;color:#8ea3b8;margin-top:6px;">Esta lista vale para os dois turnos de Senador — o eleitor pode escolher qualquer um destes nomes em qualquer um dos dois votos, em qualquer ordem, sem repetir o mesmo candidato.</p>'
-    : '';
-
-  return `
-    <div class="card">
-      <h4>Selecionar cargo</h4>
-      <select onchange="cargoSelecionadoAdmin=this.value; abrirAbaAdmin('candidatos')">${opcoesCargo}</select>
-      ${notaSenado}
-      <div class="lista-candidatos">${itensHtml}</div>
-    </div>
-    <div class="card" id="form-candidato-card">
-      ${formularioCandidato(meta.majoritario)}
-    </div>
-  `;
-}
-
-function fotoPlaceholder(){
-  return 'data:image/svg+xml;utf8,' + encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="50"><rect width="40" height="50" fill="#232a33"/></svg>'
-  );
-}
-
-let edicaoEmAndamento = null;
-let fotoTemp = null, fotoViceTemp = null;
-
-function formularioCandidato(majoritario){
-  const editando = edicaoEmAndamento && edicaoEmAndamento.cargoId===cargoSelecionadoAdmin;
-  const cand = editando ? candidatos[cargoSelecionadoAdmin][edicaoEmAndamento.index] : null;
-  const opcoesCargoForm = listaCargosAdmin().map(c=>
-    `<option value="${c.id}" ${c.id===cargoSelecionadoAdmin?'selected':''}>${c.label}</option>`
-  ).join('');
-  return `
-    <h4>${editando? 'Editar candidato':'Adicionar candidato'}</h4>
-    <label class="campo">Cargo / vaga a que concorre</label>
-    ${editando
-      ? `<select disabled style="opacity:.7;">${opcoesCargoForm}</select>
-         <p style="font-size:10px;color:#8ea3b8;margin:4px 0 0;">Para mudar o cargo de um candidato, exclua e cadastre-o novamente no cargo correto.</p>`
-      : `<select id="f-cargo" onchange="cargoSelecionadoAdmin=this.value; abrirAbaAdmin('candidatos')">${opcoesCargoForm}</select>`
-    }
-    <div class="row" style="margin-top:6px;">
-      <div>
-        <label class="campo">Número</label>
-        <input type="text" id="f-numero" value="${cand?cand.numero:''}" placeholder="Ex: 13" inputmode="numeric" pattern="[0-9]*">
-      </div>
-      <div>
-        <label class="campo">Nome</label>
-        <input type="text" id="f-nome" value="${cand?escapeHtml(cand.nome):''}" placeholder="Nome do candidato">
-      </div>
-    </div>
-    <label class="campo">Foto do candidato (JPG/PNG)</label>
-    <input type="file" id="f-foto" accept=".jpg,.jpeg,.png,image/jpeg,image/png" onchange="processarFoto(this,'principal')">
-    <div id="preview-foto-principal">${(cand&&cand.foto)||fotoTemp ? '<img src="'+(fotoTemp||cand.foto)+'" style="width:60px;height:75px;object-fit:cover;border-radius:4px;margin-top:6px;">':''}</div>
-    ${!editando ? '<p style="font-size:10px;color:#8ea3b8;margin:4px 0 0;">A foto só é salva quando você clicar em "Adicionar candidato" abaixo.</p>' : ''}
-    ${majoritario ? `
-      <label class="campo">Nome do vice</label>
-      <input type="text" id="f-vice" value="${cand&&cand.vice?escapeHtml(cand.vice):''}" placeholder="Nome do vice">
-      <label class="campo">Foto do vice (JPG/PNG)</label>
-      <input type="file" id="f-foto-vice" accept=".jpg,.jpeg,.png,image/jpeg,image/png" onchange="processarFoto(this,'vice')">
-      <div id="preview-foto-vice">${(cand&&cand.fotoVice)||fotoViceTemp ? '<img src="'+(fotoViceTemp||cand.fotoVice)+'" style="width:60px;height:75px;object-fit:cover;border-radius:4px;margin-top:6px;">':''}</div>
-    ` : ''}
-    <div class="row" style="margin-top:12px;">
-      ${editando?'<button class="btn btn-secundario" onclick="cancelarEdicaoCandidato()">Cancelar</button>':''}
-      <button class="btn btn-primario" onclick="salvarCandidato(${majoritario})">${editando?'Salvar alterações':'Adicionar candidato'}</button>
-    </div>
-  `;
-}
-
-function processarFoto(input, tipo){
-  const file = input.files[0];
-  if(!file) return;
-  if(file.size > 8*1024*1024){ toast('Imagem muito grande (máx. 8 MB).'); input.value=''; return; }
-  const reader = new FileReader();
-  reader.onload = function(e){
-    const img = new Image();
-    img.onload = function(){
-      const canvas = document.createElement('canvas');
-      const W=300, H=380;
-      canvas.width=W; canvas.height=H;
-      const ctx = canvas.getContext('2d');
-      const escala = Math.max(W/img.width, H/img.height);
-      const sw = W/escala, sh = H/escala;
-      const sx = (img.width-sw)/2, sy=(img.height-sh)/2;
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, W, H);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
-      if(tipo==='principal') fotoTemp = dataUrl; else fotoViceTemp = dataUrl;
-
-      const previewId = tipo==='principal' ? 'preview-foto-principal' : 'preview-foto-vice';
-      const previewEl = document.getElementById(previewId);
-      if(previewEl){
-        previewEl.innerHTML = '<img src="'+dataUrl+'" style="width:60px;height:75px;object-fit:cover;border-radius:4px;margin-top:6px;">';
-      }
-
-      const editando = edicaoEmAndamento && edicaoEmAndamento.cargoId===cargoSelecionadoAdmin;
-      if(editando){
-        const atual = candidatos[cargoSelecionadoAdmin][edicaoEmAndamento.index];
-        if(tipo==='principal') atual.foto = dataUrl; else atual.fotoVice = dataUrl;
-        const ok = persistirTudo();
-        if(ok) toast('Foto salva.');
-        const miniImgs = document.querySelectorAll('.lista-candidatos .item-cand .mini-foto');
-        if(miniImgs[edicaoEmAndamento.index] && tipo==='principal'){
-          miniImgs[edicaoEmAndamento.index].src = dataUrl;
-        }
-      }
-    };
-    img.onerror = function(){ toast('Não foi possível ler esta imagem.'); };
-    img.src = e.target.result;
-  };
-  reader.onerror = function(){ toast('Falha ao ler o arquivo de imagem.'); };
-  reader.readAsDataURL(file);
-}
-
-function salvarCandidato(majoritario){
-  const numero = document.getElementById('f-numero').value.trim();
-  const nome = document.getElementById('f-nome').value.trim();
-  if(!numero || !nome){ toast('Preencha número e nome.'); return; }
-  if(!/^[0-9]+$/.test(numero)){ toast('O número deve conter apenas dígitos (0-9).'); return; }
-
-  const dadosId = cargoSelecionadoAdmin;
-  const maxDigitos = config.digitos[dadosId];
-  if(maxDigitos && numero.length !== maxDigitos){
-    toast('Este cargo está configurado para números de ' + maxDigitos + ' dígito(s) — "'+numero+'" tem ' + numero.length + '. Ajuste o número ou a quantidade de dígitos em "Ordem/Dígitos".');
-    return;
-  }
-
-  const editandoAgora = edicaoEmAndamento && edicaoEmAndamento.cargoId===cargoSelecionadoAdmin;
-  const listaAtual = candidatos[dadosId] || [];
-  const numeroDuplicado = listaAtual.some((c,i)=>
-    c.numero===numero && !(editandoAgora && i===edicaoEmAndamento.index)
-  );
-  if(numeroDuplicado){
-    toast('Já existe um candidato com o número '+numero+' cadastrado neste cargo.');
-    return;
-  }
-
-  const novo = { numero, nome, ativo:true };
-  if(majoritario){
-    novo.vice = document.getElementById('f-vice') ? document.getElementById('f-vice').value.trim() : '';
-  }
-
-  if(!candidatos[cargoSelecionadoAdmin]) candidatos[cargoSelecionadoAdmin]=[];
-
-  if(edicaoEmAndamento && edicaoEmAndamento.cargoId===cargoSelecionadoAdmin){
-    const atual = candidatos[cargoSelecionadoAdmin][edicaoEmAndamento.index];
-    novo.foto = fotoTemp || atual.foto || null;
-    if(majoritario) novo.fotoVice = fotoViceTemp || atual.fotoVice || null;
-    novo.ativo = atual.ativo;
-    candidatos[cargoSelecionadoAdmin][edicaoEmAndamento.index] = novo;
-    toast('Candidato atualizado.');
-  } else {
-    novo.foto = fotoTemp || null;
-    if(majoritario) novo.fotoVice = fotoViceTemp || null;
-    candidatos[cargoSelecionadoAdmin].push(novo);
-    toast('Candidato adicionado.');
-  }
-  edicaoEmAndamento = null;
-  fotoTemp = null; fotoViceTemp = null;
-  persistirTudo();
-  abrirAbaAdmin('candidatos');
-}
-
-function editarCandidato(cargoId, index){
-  cargoSelecionadoAdmin = cargoId;
-  edicaoEmAndamento = { cargoId, index };
-  fotoTemp = null; fotoViceTemp=null;
-  abrirAbaAdmin('candidatos');
-}
-function cancelarEdicaoCandidato(){
-  edicaoEmAndamento = null;
-  fotoTemp = null; fotoViceTemp=null;
-  abrirAbaAdmin('candidatos');
-}
-function toggleAtivoCandidato(cargoId, index){
-  const c = candidatos[cargoId][index];
-  c.ativo = c.ativo===false ? true : false;
-  persistirTudo();
-  abrirAbaAdmin('candidatos');
-}
-function excluirCandidato(cargoId, index){
-  if(!confirm('Excluir este candidato definitivamente?')) return;
-  candidatos[cargoId].splice(index,1);
-  if(edicaoEmAndamento && edicaoEmAndamento.cargoId===cargoId){
-    edicaoEmAndamento = null;
-    fotoTemp = null; fotoViceTemp = null;
-  }
-  persistirTudo();
-  abrirAbaAdmin('candidatos');
-}
-
-/* ---------- ABA ORDEM / DÍGITOS ---------- */
-function renderAbaOrdem(){
-  let itens = config.ordem.map((id,i)=>{
-    const dadosId = CARGOS_META[id].dadosCargoId;
-    return `
-    <div class="ordem-item">
-      <div class="nome-c">${i+1}. ${CARGOS_META[id].label}</div>
-      <label style="font-size:10px;color:#8ea3b8;">Dígitos:
-        <input type="number" min="1" max="6" value="${config.digitos[dadosId]}" style="width:48px; padding:4px;"
-          onchange="alterarDigitos('${dadosId}', this.value)">
-      </label>
-      <div class="setas">
-        <button onclick="moverCargo(${i},-1)" ${i===0?'disabled':''}>▲</button>
-        <button onclick="moverCargo(${i},1)" ${i===config.ordem.length-1?'disabled':''}>▼</button>
-      </div>
-    </div>`;
-  }).join('');
-  return `<div class="card"><h4>Ordem de votação e quantidade de dígitos por cargo</h4>
-    <p style="font-size:10.5px;color:#8ea3b8;">Os dois turnos de Senador compartilham a mesma quantidade de dígitos, por usarem a mesma lista de candidatos.</p>
-    ${itens}</div>`;
-}
-function moverCargo(i, dir){
-  const j = i+dir;
-  if(j<0 || j>=config.ordem.length) return;
-  const tmp = config.ordem[i];
-  config.ordem[i] = config.ordem[j];
-  config.ordem[j] = tmp;
-  persistirTudo();
-  abrirAbaAdmin('ordem');
-}
-function alterarDigitos(dadosCargoId, val){
-  const n = parseInt(val,10);
-  if(n>0 && n<=6){ config.digitos[dadosCargoId] = n; persistirTudo(); }
-}
-
-/* ---------- ABA APURAÇÃO ---------- */
-function renderAbaApuracao(){
-  let totalGeralVotos = 0;
-  config.ordem.forEach(id=>{
-    const r = resultados[id] || {};
-    Object.keys(r).forEach(k=> totalGeralVotos += r[k]);
-  });
-
-  let statHtml = `
-    <div class="stat-grid">
-      <div class="stat-box"><div class="v">${sessao.totalVotantes||0}</div><div class="l">TOTAL DE VOTANTES</div></div>
-      <div class="stat-box"><div class="v">${totalGeralVotos}</div><div class="l">TOTAL DE VOTOS REGISTRADOS</div></div>
-    </div>`;
-
-  let cargosHtml = config.ordem.map(cargoId=>{
-    const meta = CARGOS_META[cargoId];
-    const r = resultados[cargoId] || { BRANCO:0, NULO:0 };
-    const cands = (candidatos[meta.dadosCargoId]||[]);
-    let totalCargo = 0;
-    Object.keys(r).forEach(k=> totalCargo += r[k]);
-
-    let linhas = cands.map(c=>{
-      const v = r[c.numero]||0;
-      const pct = totalCargo>0 ? (v/totalCargo*100).toFixed(1) : '0.0';
-      return `<tr>
-        <td>${c.numero}</td><td>${escapeHtml(c.nome)}${c.vice?' / '+escapeHtml(c.vice):''}</td>
-        <td>${v}</td><td>${pct}%<div class="barra-bg"><div class="barra-fill" style="width:${pct}%"></div></div></td>
-      </tr>`;
-    }).join('');
-
-    const brancoV = r.BRANCO||0, nuloV = r.NULO||0;
-    const pctBranco = totalCargo>0 ? (brancoV/totalCargo*100).toFixed(1) : '0.0';
-    const pctNulo = totalCargo>0 ? (nuloV/totalCargo*100).toFixed(1) : '0.0';
-    linhas += `<tr><td>—</td><td>Brancos</td><td>${brancoV}</td><td>${pctBranco}%</td></tr>`;
-    linhas += `<tr><td>—</td><td>Nulos</td><td>${nuloV}</td><td>${pctNulo}%</td></tr>`;
-
-    return `
-      <div class="card">
-        <h4>${meta.label} — total: ${totalCargo} votos</h4>
-        <div class="tabela-scroll">
-          <table class="resultados">
-            <thead><tr><th>Nº</th><th>Candidato</th><th>Votos</th><th>%</th></tr></thead>
-            <tbody>${linhas}</tbody>
-          </table>
-        </div>
-      </div>`;
-  }).join('');
-
-  return statHtml + cargosHtml + `
-    <div class="card">
-      <button class="btn btn-perigo btn-full" onclick="zerarApuracao()">ZERAR TODA A APURAÇÃO</button>
-    </div>`;
-}
-
-function zerarApuracao(){
-  if(!confirm('ATENÇÃO: isso apagará TODOS os resultados e o total de votantes. Os candidatos cadastrados NÃO serão apagados. Deseja continuar?')) return;
-  if(!confirm('Confirmação final: tem certeza absoluta que deseja zerar toda a apuração?')) return;
-  resultados = {};
-  garantirResultados();
-  sessao.totalVotantes = 0;
-  persistirTudo();
-  fbZerarApuracaoRemota();
-  toast('Apuração zerada.');
-  abrirAbaAdmin('apuracao');
-}
-
-/* ---------- ABA CONFIGURAÇÕES ---------- */
-const FB_STATUS_INFO = {
-  desativado: { cor:'#8ea3b8', texto:'⚪ Sincronização com Firebase não configurada — candidatos, fotos e resultados ficam salvos SÓ neste navegador (somem ao limpar o cache ou trocar de navegador/dispositivo). Preencha firebase-config.js para ativar.' },
-  conectando: { cor:'#e08e0b', texto:'🟡 Conectando ao Firebase...' },
-  ok:         { cor:'#1e8449', texto:'🟢 Sincronizado com o Firebase — candidatos, fotos e resultados também estão salvos na nuvem.' },
-  erro:       { cor:'#c0392b', texto:'🔴 Falha na sincronização com o Firebase — verifique o campo databaseURL em firebase-config.js (a URL aparece no topo da tela do Realtime Database no Console do Firebase) e as regras de segurança. Os dados estão salvos SÓ neste navegador até isso ser corrigido.' }
-};
-function renderAbaConfig(){
-  const somLigado = config.somAtivado !== false;
-  const statusInfo = FB_STATUS_INFO[fbStatus] || FB_STATUS_INFO.desativado;
-  return `
-    <div class="card">
-      <h4>☁️ Status de sincronização</h4>
-      <p style="font-size:11.5px;color:${statusInfo.cor};line-height:1.5;">${statusInfo.texto}</p>
-    </div>
-    <div class="card">
-      <h4>💾 Backup de candidatos, fotos e configurações</h4>
-      <p style="font-size:11.5px;color:#8ea3b8;">Baixa um arquivo .json com tudo (inclusive as fotos). Guarde esse arquivo — ele permite restaurar os candidatos em qualquer navegador ou dispositivo, mesmo se o armazenamento deste navegador for apagado.</p>
-      <button class="btn btn-primario btn-full" onclick="exportarBackup()">Baixar backup completo</button>
-      <label class="campo" style="margin-top:10px;">Restaurar a partir de um backup (.json)</label>
-      <input type="file" id="f-importar-backup" accept=".json,application/json" onchange="importarBackup(this)">
-      <p style="font-size:10px;color:#8ea3b8;margin-top:4px;">Atenção: restaurar substitui TODOS os candidatos, fotos, configurações e resultados atuais.</p>
-    </div>
-    <div class="card">
-      <h4>Sons de votação</h4>
-      <p style="font-size:11.5px;color:#8ea3b8;">Bipes de tecla, confirmação, voto em branco/nulo e finalização.</p>
-      <button class="btn ${somLigado?'btn-primario':'btn-secundario'} btn-full" onclick="alternarSom()">
-        ${somLigado?'🔊 Som ativado (clique para desativar)':'🔇 Som desativado (clique para ativar)'}
-      </button>
-    </div>
-    <div class="card">
-      <h4>Alterar senha administrativa</h4>
-      <label class="campo">Senha atual</label>
-      <input type="password" id="senha-atual">
-      <label class="campo">Nova senha</label>
-      <input type="password" id="senha-nova">
-      <button class="btn btn-primario" style="margin-top:10px;" onclick="alterarSenhaAdmin()">Salvar nova senha</button>
-    </div>
-    <div class="card">
-      <h4>Sessão de votação</h4>
-      <p style="font-size:12px;color:#a9b7c4;">Status atual: <b>${sessao.ativa?'EM ANDAMENTO (etapa '+(sessao.indiceCargo+1)+')':'nenhuma votação em andamento'}</b></p>
-      <button class="btn btn-secundario btn-full" onclick="abrirNovaVotacao()">NOVA VOTAÇÃO (limpa sessão atual)</button>
-    </div>
-    <div class="card">
-      <h4>Restaurar candidatos padrão</h4>
-      <p style="font-size:11.5px;color:#8ea3b8;">Restaura a lista original de candidatos de exemplo (sem apagar apuração já registrada). Use com cuidado.</p>
-      <button class="btn btn-laranja btn-full" onclick="restaurarCandidatosPadrao()">Restaurar candidatos padrão</button>
-    </div>
-  `;
-}
-function alternarSom(){
-  config.somAtivado = config.somAtivado===false ? true : false;
-  persistirTudo();
-  if(config.somAtivado) tocarSom('tecla');
-  abrirAbaAdmin('config');
-}
-function alterarSenhaAdmin(){
-  const atual = document.getElementById('senha-atual').value;
-  const nova = document.getElementById('senha-nova').value;
-  if(atual !== config.senhaAdmin){ toast('Senha atual incorreta.'); return; }
-  if(!nova || nova.length<4){ toast('A nova senha deve ter ao menos 4 caracteres.'); return; }
-  config.senhaAdmin = nova;
-  persistirTudo();
-  toast('Senha alterada com sucesso.');
-  abrirAbaAdmin('config');
-}
-function restaurarCandidatosPadrao(){
-  if(!confirm('Isso substituirá a lista atual de candidatos pelos candidatos de exemplo padrão. Continuar?')) return;
-  candidatos = candidatosPadrao();
-  persistirTudo();
-  toast('Candidatos padrão restaurados.');
-  abrirAbaAdmin('candidatos');
-}
-
-function exportarBackup(){
-  const dados = {
-    versao: 1,
-    dataExportacao: new Date().toISOString(),
-    candidatos, config, resultados, sessao
-  };
-  const blob = new Blob([JSON.stringify(dados, null, 2)], { type:'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  const agora = new Date();
-  const pad = n => String(n).padStart(2,'0');
-  a.href = url;
-  a.download = 'backup-urna-simulador-' + agora.getFullYear() + pad(agora.getMonth()+1) + pad(agora.getDate()) + '-' + pad(agora.getHours()) + pad(agora.getMinutes()) + '.json';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(()=> URL.revokeObjectURL(url), 2000);
-  toast('Backup baixado.');
-}
-
-function importarBackup(input){
-  const file = input.files[0];
-  if(!file) return;
-  if(file.size > 60*1024*1024){ toast('Arquivo de backup muito grande.'); input.value=''; return; }
-  const reader = new FileReader();
-  reader.onload = function(e){
-    let dados;
-    try{
-      dados = JSON.parse(e.target.result);
-    }catch(err){
-      toast('Arquivo inválido — não é um backup .json legível.');
-      return;
-    }
-    if(!dados || !dados.candidatos || !dados.config){
-      toast('Este arquivo não parece ser um backup válido deste simulador.');
-      return;
-    }
-    if(!confirm('Isso substituirá TODOS os candidatos, fotos, configurações e resultados atuais pelos dados deste backup. Deseja continuar?')) return;
-    candidatos = dados.candidatos;
-    config = dados.config;
-    resultados = dados.resultados || {};
-    sessao = dados.sessao || { ativa:false, indiceCargo:0, totalVotantes:0, escolhasSenado:[] };
-    if(!sessao.escolhasSenado) sessao.escolhasSenado = [];
-    garantirResultados();
-    const ok = persistirTudo();
-    if(ok) toast('Backup restaurado com sucesso.');
-    input.value = '';
-    abrirAbaAdmin('candidatos');
-  };
-  reader.onerror = function(){ toast('Falha ao ler o arquivo.'); };
-  reader.readAsText(file);
-}
-
-/* ================= INICIALIZAÇÃO ================= */
-window.addEventListener('DOMContentLoaded', ()=>{
-  garantirResultados();
-  if(sessao.ativa){
-    sessao.ativa = false;
-    sessao.indiceCargo = 0;
-    sessao.escolhasSenado = [];
-    persistirTudo();
-  }
-  mostrarTela('tela-inicial');
-
-  // Enter na senha do admin também faz login.
-  const inpSenha = document.getElementById('input-senha-admin');
-  if(inpSenha){
-    inpSenha.addEventListener('keydown', e=>{
-      if(e.key==='Enter') tentarLoginAdmin();
-    });
-  }
-
-  try{
-    const ehIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    const jaInstalado = window.navigator.standalone === true ||
-      (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
-    if(ehIOS && !jaInstalado){
-      document.getElementById('dica-ios-tela-cheia').classList.remove('hidden');
-    }
-  }catch(e){}
+document.addEventListener('keydown',e=>{
+  if(!$('#vote').classList.contains('on')||$('#dlg').open)return;
+  if(/^[0-9]$/.test(e.key))digitar(e.key);
+  else if(e.key==='Backspace'||e.key==='Delete')corrige();
+  else if(e.key==='Enter'){e.preventDefault();confirma()}
 });
+
+/* ====================== ADMIN ====================== */
+let cliques=0,tCl,falhas=0,bloqueio=0,logado=false,aba='cand',edIdx=-1,ph={p:null,v:null};
+$('#hd').addEventListener('click',()=>{clearTimeout(tCl);tCl=setTimeout(()=>cliques=0,1800);if(++cliques>=5){cliques=0;abrirLogin()}});
+function abrirLogin(){
+  const novo=!S.cfg.pw;
+  $('#lg-t').textContent=novo?'Criar senha de administrador':'Área administrativa';
+  $('#lg-p').textContent=novo?'Primeiro acesso: defina uma senha (mínimo 4 caracteres).':'Digite a senha para continuar.';
+  $('#lg-pw').value='';tela('login');setTimeout(()=>$('#lg-pw').focus(),100);
+}
+$('#lg-pw').addEventListener('keydown',e=>{if(e.key==='Enter')A.entrar()});
+const A={
+  d:(i)=>digitar(i),corrige,branco,confirma,iniciar,inicio:A_inicio,
+  tela:()=>{const e=document.documentElement;(e.requestFullscreen||e.webkitRequestFullscreen)?.call(e)},
+  fonte:(i)=>{S.cfg.fs=Math.min(1.5,Math.max(.9,+(S.cfg.fs+.15*i).toFixed(2)));aplicarFonte();persist()},
+  async entrar(){
+    const v=$('#lg-pw').value;
+    if(Date.now()<bloqueio){toast('Aguarde alguns segundos para tentar novamente.');return}
+    if(!S.cfg.pw){if(v.length<4){toast('A senha deve ter ao menos 4 caracteres.');return}S.cfg.pw=await hash(v);persist()}
+    else if(await hash(v)!==S.cfg.pw){if(++falhas>=5){bloqueio=Date.now()+30000;falhas=0}toast('Senha incorreta.');return}
+    falhas=0;logado=true;aba='cand';tela('adm');render();
+  },
+  tab:(i)=>{aba=i;render()},
+  edit:(i)=>{edIdx=+i;ph={p:null,v:null};render()},
+  cancel:()=>{edIdx=-1;ph={p:null,v:null};render()},
+  toggle:(i)=>{S.cand[i].ativo=S.cand[i].ativo===false;persist();render()},
+  async del(i){if(await perguntar('Excluir candidato','Excluir "'+S.cand[i].nome+'"? Os votos já registrados continuam na apuração.',{ok:'EXCLUIR',cancel:'Cancelar',cls:'bad'})){S.cand.splice(i,1);edIdx=-1;persist();render()}},
+  salvar(){
+    const numero=$('#f-n').value.trim(),nome=$('#f-nm').value.trim(),vice=$('#f-v').value.trim();
+    if(!numero||!nome)return toast('Preencha número e nome.');
+    if(!/^\d+$/.test(numero))return toast('O número deve ter apenas dígitos.');
+    if(numero.length!==S.cfg.digitos)return toast('O número deve ter '+S.cfg.digitos+' dígitos (ajuste em Ajustes).');
+    if(S.cand.some((c,i)=>c.numero===numero&&i!==edIdx))return toast('Já existe candidato com o número '+numero+'.');
+    const at=edIdx>=0?S.cand[edIdx]:{};
+    const novo={numero,nome,vice,ativo:at.ativo!==false,foto:ph.p||at.foto||null,fotoVice:ph.v||at.fotoVice||null};
+    if(edIdx>=0)S.cand[edIdx]=novo;else S.cand.push(novo);
+    edIdx=-1;ph={p:null,v:null};persist();toast('Candidato salvo.');render();
+  },
+  som:()=>{S.cfg.som=!S.cfg.som;persist();render()},
+  dgt:()=>{const n=+$('#c-dg').value;if(n<1||n>6)return toast('Use de 1 a 6 dígitos.');S.cfg.digitos=n;persist();toast('Salvo. Confira se os números dos candidatos têm '+n+' dígitos.');render()},
+  async senha(){
+    if(await hash($('#p-a').value)!==S.cfg.pw)return toast('Senha atual incorreta.');
+    const n=$('#p-n').value;if(n.length<4)return toast('A nova senha deve ter ao menos 4 caracteres.');
+    S.cfg.pw=await hash(n);persist();toast('Senha alterada.');render();
+  },
+  async zerar(){
+    if(!await perguntar('Zerar apuração','Isso apaga TODOS os votos registrados. Os candidatos são mantidos.',{ok:'ZERAR',cancel:'Cancelar',cls:'bad'}))return;
+    if(!await perguntar('Confirmação final','Tem certeza absoluta? Esta ação não pode ser desfeita.',{ok:'SIM, ZERAR',cancel:'Cancelar',cls:'bad'}))return;
+    S.res={votos:{BRANCO:0,NULO:0}};persist();toast('Apuração zerada.');render();
+  },
+  backup(){
+    const d={v:2,data:new Date().toISOString(),cand:S.cand,res:S.res,cfg:{digitos:S.cfg.digitos,som:S.cfg.som}};
+    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:'application/json'}));
+    a.download='backup-urna-2turno-'+new Date().toISOString().slice(0,16).replace(/[-:T]/g,'')+'.json';
+    document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+  }
+};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(b&&A[b.dataset.a])A[b.dataset.a](b.dataset.i)});
+
+document.addEventListener('change',e=>{
+  const t=e.target,f=t.files&&t.files[0];if(!f)return;
+  if(t.id==='f-fp'||t.id==='f-fv'){
+    if(f.size>8e6)return toast('Imagem muito grande (máx. 8 MB).');
+    const img=new Image(),u=URL.createObjectURL(f);
+    img.onload=()=>{
+      const W=300,H=380,c=document.createElement('canvas');c.width=W;c.height=H;
+      const s=Math.max(W/img.width,H/img.height),sw=W/s,sh=H/s;
+      c.getContext('2d').drawImage(img,(img.width-sw)/2,(img.height-sh)/2,sw,sh,0,0,W,H);
+      const url=c.toDataURL('image/jpeg',.82);URL.revokeObjectURL(u);
+      const k=t.id==='f-fp'?'p':'v';ph[k]=url;
+      $('#pv-'+k).innerHTML='<img src="'+url+'" alt="Pré-visualização">';
+    };
+    img.onerror=()=>toast('Não foi possível ler esta imagem.');img.src=u;
+  }
+  if(t.id==='f-imp'){
+    const r=new FileReader();
+    r.onload=async()=>{
+      let d;try{d=JSON.parse(r.result)}catch{return toast('Arquivo inválido.')}
+      if(!d||!Array.isArray(d.cand))return toast('Não parece um backup deste simulador.');
+      if(!await perguntar('Restaurar backup','Isso substitui candidatos, fotos e apuração atuais.',{ok:'RESTAURAR',cancel:'Cancelar',cls:'bad'}))return;
+      S.cand=d.cand.filter(c=>c&&/^\d+$/.test(c.numero)).map(c=>({numero:c.numero,nome:String(c.nome||''),vice:String(c.vice||''),ativo:c.ativo!==false,foto:imgOk(c.foto),fotoVice:imgOk(c.fotoVice)}));
+      if(d.res&&d.res.votos){S.res={votos:Object.assign({BRANCO:0,NULO:0},d.res.votos)}}
+      if(d.cfg){S.cfg.digitos=Math.min(6,Math.max(1,+d.cfg.digitos||2));S.cfg.som=d.cfg.som!==false}
+      persist();toast('Backup restaurado.');render();
+    };
+    r.readAsText(f);t.value='';
+  }
+});
+
+function render(){
+  if(!logado)return;
+  $('#tabs').innerHTML=[['cand','Candidatos'],['apu','Apuração'],['aju','Ajustes']].map(([i,l])=>`<button class="btn sm ${aba===i?'on':''}" data-a="tab" data-i="${i}">${l}</button>`).join('');
+  $('#adm-c').innerHTML=aba==='cand'?vCand():aba==='apu'?vApu():vAju();
+}
+function vCand(){
+  const c=edIdx>=0?S.cand[edIdx]:null;
+  const lista=S.cand.map((x,i)=>`<div class="item"><img src="${x.foto||'data:image/gif;base64,R0lGODlhAQABAAAAACw='}" alt=""><div class="d"><b>${esc(x.numero)}</b> — ${esc(x.nome)}${x.vice?'<br>Vice: '+esc(x.vice):''}${x.ativo===false?'<br><b style="color:#b45309">INATIVO</b>':''}</div>
+    <button class="btn sm azul" data-a="edit" data-i="${i}">Editar</button><button class="btn sm warn" data-a="toggle" data-i="${i}">${x.ativo===false?'Ativar':'Desativar'}</button><button class="btn sm bad" data-a="del" data-i="${i}">Excluir</button></div>`).join('')||'<p>Nenhum candidato cadastrado.</p>';
+  const pv=(s,k)=>`<div class="prev" id="pv-${k}">${s?`<img src="${s}" alt="">`:''}</div>`;
+  return `<div class="card"><h2>Candidatos a Presidente</h2>${lista}</div>
+  <div class="card"><h2>${c?'Editar candidato':'Adicionar candidato'}</h2>
+    <label for="f-n">Número (${S.cfg.digitos} dígitos)</label><input type="text" id="f-n" inputmode="numeric" maxlength="${S.cfg.digitos}" value="${c?esc(c.numero):''}">
+    <label for="f-nm">Nome do candidato</label><input type="text" id="f-nm" value="${c?esc(c.nome):''}">
+    <label for="f-fp">Foto do candidato (JPG/PNG)</label><input type="file" id="f-fp" accept="image/jpeg,image/png">${pv(c&&c.foto,'p')}
+    <label for="f-v">Nome do vice</label><input type="text" id="f-v" value="${c?esc(c.vice||''):''}">
+    <label for="f-fv">Foto do vice (JPG/PNG)</label><input type="file" id="f-fv" accept="image/jpeg,image/png">${pv(c&&c.fotoVice,'v')}
+    <p>A foto só é gravada ao clicar em Salvar.</p>
+    <div class="row" style="margin-top:.8rem">${c?'<button class="btn" data-a="cancel">Cancelar</button>':''}<button class="btn ok" data-a="salvar">Salvar candidato</button></div></div>`;
+}
+function vApu(){
+  const v=S.res.votos,tot=totalVotos(),pct=n=>tot?(n/tot*100).toFixed(1):'0.0';
+  const lin=(l,n)=>`<div class="res"><div class="l"><span>${l}</span><span>${n} · ${pct(n)}%</span></div><div class="bar"><i style="width:${pct(n)}%"></i></div></div>`;
+  const nums=new Set(S.cand.map(c=>c.numero));
+  const rows=S.cand.map(c=>lin(esc(c.numero)+' — '+esc(c.nome)+(c.vice?' / '+esc(c.vice):''),v[c.numero]||0)).join('')
+    +Object.keys(v).filter(k=>k!=='BRANCO'&&k!=='NULO'&&!nums.has(k)).map(k=>lin('Nº '+esc(k)+' (candidato removido)',v[k])).join('')
+    +lin('Votos em branco',v.BRANCO||0)+lin('Votos nulos',v.NULO||0);
+  return `<div class="card"><div class="stats"><div class="stat"><b>${tot}</b>Total de votantes</div><div class="stat"><b>${tot-(v.BRANCO||0)-(v.NULO||0)}</b>Votos válidos</div></div></div>
+  <div class="card"><h2>Resultado do 2º turno</h2>${rows}</div>
+  <div class="card"><button class="btn bad" data-a="zerar">ZERAR APURAÇÃO</button></div>`;
+}
+function vAju(){
+  return `<div class="card"><h2>Som</h2><button class="btn ${S.cfg.som?'ok':''}" data-a="som">${S.cfg.som?'🔊 Som ligado (tocar para desligar)':'🔇 Som desligado (tocar para ligar)'}</button></div>
+  <div class="card"><h2>Dígitos do número do candidato</h2><input type="number" id="c-dg" min="1" max="6" value="${S.cfg.digitos}"><div style="margin-top:.7rem"><button class="btn ok" data-a="dgt">Salvar</button></div></div>
+  <div class="card"><h2>Alterar senha</h2><label for="p-a">Senha atual</label><input type="password" id="p-a" autocomplete="current-password"><label for="p-n">Nova senha</label><input type="password" id="p-n" autocomplete="new-password"><div style="margin-top:.7rem"><button class="btn ok" data-a="senha">Salvar nova senha</button></div></div>
+  <div class="card"><h2>Backup</h2><p>Baixa um .json com candidatos, fotos e apuração.</p><button class="btn azul" data-a="backup">Baixar backup</button><label for="f-imp">Restaurar de um backup (.json)</label><input type="file" id="f-imp" accept=".json,application/json"></div>`;
+}
+window.addEventListener('beforeunload',()=>{});
+})();
 </script>
 </body>
 </html>
